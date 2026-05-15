@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/firebase_service.dart';
+import '../../data/repositories/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,6 +16,9 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authRepository = AuthRepository();
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -23,9 +27,42 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.home);
+
+    if (!_authRepository.isAvailable) {
+      _showError(
+        'Firebase indisponivel. Confira se Authentication e Firestore foram '
+        'habilitados no console.',
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authRepository.signInOrCreateUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } catch (error) {
+      if (!mounted) return;
+      _showError(
+          'Nao foi possivel entrar. Verifique e-mail, senha e Firebase.');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -95,9 +132,15 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _login,
-              icon: const Icon(Icons.login),
-              label: const Text('Entrar'),
+              onPressed: _isLoading ? null : _login,
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.login),
+              label: Text(_isLoading ? 'Entrando...' : 'Entrar'),
             ),
           ],
         ),

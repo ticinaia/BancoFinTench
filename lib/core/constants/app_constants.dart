@@ -18,4 +18,7 @@ class AppConstants {
   static const String tokenKey = 'auth_token';
   static const String userIdKey = 'user_id';
   static const String biometricEnabledKey = 'biometric_enabled';
+
+  // Colecoes do Firestore
+  static const String usersCollection = 'users';
 }

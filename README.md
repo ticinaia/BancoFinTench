@@ -156,12 +156,18 @@ Passo a passo:
 1. Mostra o status do Firebase.
 2. Exibe formulario com e-mail e senha.
 3. Valida se os campos foram preenchidos.
-4. Ao clicar em `Entrar`, navega para a home.
+4. Ao clicar em `Entrar`, tenta autenticar com Firebase Auth.
+5. Se o usuario ainda nao existir, cria a conta com e-mail e senha.
+6. Cria ou atualiza o documento do usuario no Firestore.
+7. Depois navega para a home.
 
-Importante: o login atual ainda nao autentica com Firebase Auth. Ele apenas
-valida o formulario e troca de tela. A equipe responsavel por autenticacao deve
-implementar o login real usando `AppPlugins.firebaseAuth` ou
-`FirebaseService.auth`.
+Arquivos principais da autenticacao:
+
+```text
+lib/features/auth/data/repositories/auth_repository.dart
+lib/features/auth/data/repositories/user_repository.dart
+lib/features/auth/domain/models/app_user.dart
+```
 
 ### Home
 
@@ -237,6 +243,19 @@ features forem implementadas:
 - Authentication com Email/Password
 - Cloud Firestore
 - Storage, se houver upload de imagens ou documentos
+
+Colecao inicial usada pelo app:
+
+```text
+users/{uid}
+```
+
+Campos gravados:
+
+- `email`: e-mail do usuario.
+- `name`: nome inicial gerado a partir do e-mail.
+- `createdAt`: data de criacao do documento.
+- `updatedAt`: data da ultima atualizacao.
 
 ## 9. Plugins Centralizados
 
