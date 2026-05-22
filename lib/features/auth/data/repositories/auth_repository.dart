@@ -16,7 +16,7 @@ class AuthRepository {
 
   bool get isAvailable => _firebaseAuth != null && _userRepository.isAvailable;
 
-  Future<AppUser> signInOrCreateUser({
+  Future<AppUser> signIn({
     required String email,
     required String password,
   }) async {
@@ -25,20 +25,35 @@ class AuthRepository {
       throw StateError('Firebase Auth ainda nao foi inicializado.');
     }
 
-    UserCredential credential;
-    try {
-      credential = await auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } on FirebaseAuthException catch (error) {
-      if (error.code != 'user-not-found') rethrow;
-      credential = await auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    final credential = await auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    return _saveAuthenticatedUser(credential, email);
+  }
+
+  Future<AppUser> createUser({
+    required String email,
+    required String password,
+  }) async {
+    final auth = _firebaseAuth;
+    if (auth == null) {
+      throw StateError('Firebase Auth ainda nao foi inicializado.');
     }
 
+    final credential = await auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    return _saveAuthenticatedUser(credential, email);
+  }
+
+  Future<AppUser> _saveAuthenticatedUser(
+    UserCredential credential,
+    String email,
+  ) async {
     final firebaseUser = credential.user;
     if (firebaseUser == null) {
       throw StateError('Nao foi possivel obter o usuario autenticado.');

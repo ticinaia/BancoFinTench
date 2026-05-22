@@ -41,7 +41,7 @@ class _CadastroPageState extends State<CadastroPage> {
     setState(() => _carregando = true);
 
     try {
-      await _authRepository.signInOrCreateUser(
+      await _authRepository.createUser(
         email: _emailController.text.trim(),
         password: _senhaController.text.trim(),
       );
@@ -74,6 +74,8 @@ class _CadastroPageState extends State<CadastroPage> {
         return 'Login por e-mail/senha nao foi habilitado no Firebase Authentication.';
       case 'weak-password':
         return 'A senha e muito fraca. Use pelo menos 6 caracteres.';
+      case 'network-request-failed':
+        return 'Sem conexao com o Firebase. Verifique sua internet.';
       default:
         return 'Erro no Firebase Auth (${erro.code}).';
     }
