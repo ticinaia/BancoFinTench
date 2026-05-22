@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -40,13 +41,16 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      await _authRepository.signInOrCreateUser(
+      await _authRepository.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+      _showError(_firebaseAuthMessage(error));
     } catch (error) {
       if (!mounted) return;
       _showError(
@@ -55,6 +59,25 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  String _firebaseAuthMessage(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-email':
+        return 'Informe um e-mail valido.';
+      case 'invalid-credential':
+      case 'user-not-found':
+      case 'wrong-password':
+        return 'E-mail ou senha incorretos.';
+      case 'operation-not-allowed':
+        return 'Login por e-mail/senha nao foi habilitado no Firebase Authentication.';
+      case 'too-many-requests':
+        return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+      case 'network-request-failed':
+        return 'Sem conexao com o Firebase. Verifique sua internet.';
+      default:
+        return 'Erro no Firebase Auth (${error.code}).';
     }
   }
 
@@ -108,6 +131,9 @@ class _LoginPageState extends State<LoginPage> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Informe seu e-mail';
                       }
+                      if (!value.trim().contains('@')) {
+                        return 'Informe um e-mail valido';
+                      }
                       return null;
                     },
                   ),
@@ -134,10 +160,10 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: _isLoading ? null : _login,
               icon: _isLoading
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.login),
               label: Text(_isLoading ? 'Entrando...' : 'Entrar'),
             ),

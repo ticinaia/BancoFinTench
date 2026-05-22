@@ -5,9 +5,6 @@ import 'app/routes/app_routes.dart';
 import 'app/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/app_plugins.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
