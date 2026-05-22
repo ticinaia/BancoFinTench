@@ -16,6 +16,12 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>banco_fin_tech</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O Banco Fin Tech usa a camera para ler codigos e selecionar imagens.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>O Banco Fin Tech usa Face ID para autenticar seu acesso com seguranca.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Banco Fin Tech usa sua galeria para selecionar imagens quando voce solicitar.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
