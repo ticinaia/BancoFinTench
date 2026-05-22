@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_routes.dart';
+import '../../features/auth/presentation/pages/cadastro_page.dart';
 
 // Páginas (serão criadas conforme o projeto evolui)
 import '../../features/splash/presentation/pages/splash_page.dart';
@@ -20,6 +21,8 @@ class AppRouter {
       case AppRoutes.home:
         return _buildRoute(const HomePage(), settings);
 
+      case AppRoutes.cadastro:
+        return _buildRoute(const CadastroPage(), settings);
       default:
         return _buildRoute(
           const _NotFoundPage(),
