@@ -32,8 +32,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!_authRepository.isAvailable) {
       _showError(
-        'Firebase indisponivel. Confira se Authentication e Firestore foram '
-        'habilitados no console.',
+        'Firebase indisponivel. Confira se Authentication e Firestore foram habilitados no console.',
       );
       return;
     }
@@ -135,12 +134,18 @@ class _LoginPageState extends State<LoginPage> {
               onPressed: _isLoading ? null : _login,
               icon: _isLoading
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
                   : const Icon(Icons.login),
               label: Text(_isLoading ? 'Entrando...' : 'Entrar'),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.cadastro),
+              icon: const Icon(Icons.person_add),
+              label: const Text('Nao tenho conta. Cadastrar'),
             ),
           ],
         ),
