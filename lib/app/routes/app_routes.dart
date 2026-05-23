@@ -6,4 +6,6 @@ class AppRoutes {
   static const String login = '/login';
   static const String home = '/home';
   static const String cadastro = '/cadastro';
+  static const String pixTransfer = '/pix-transfer';
+  static const String pixHistory = '/pix-history';
 }
