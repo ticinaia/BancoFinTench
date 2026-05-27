@@ -3,6 +3,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -60,15 +61,13 @@ class _SplashPageState extends State<SplashPage>
 
   Future<void> _navigateAfterDelay() async {
     await Future.delayed(AppConstants.splashDuration);
-    if (mounted) {
-      // TODO: Verificar sessão ativa e redirecionar adequadamente
-      // bool isLoggedIn = await AuthService.isLoggedIn();
-      // Navigator.pushReplacementNamed(
-      //   context,
-      //   isLoggedIn ? AppRoutes.home : AppRoutes.login,
-      // );
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    }
+    if (!mounted) return;
+
+    final authRepository = AuthRepository();
+    final nextRoute =
+        authRepository.currentUser == null ? AppRoutes.login : AppRoutes.home;
+
+    Navigator.pushReplacementNamed(context, nextRoute);
   }
 
   @override

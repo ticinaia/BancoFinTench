@@ -16,6 +16,8 @@ class AuthRepository {
 
   bool get isAvailable => _firebaseAuth != null && _userRepository.isAvailable;
 
+  User? get currentUser => _firebaseAuth?.currentUser;
+
   Future<AppUser> signIn({
     required String email,
     required String password,
