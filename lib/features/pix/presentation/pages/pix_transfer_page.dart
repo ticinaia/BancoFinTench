@@ -4,6 +4,7 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/app_plugins.dart';
+import '../../../../core/utils/br_formatters.dart';
 import '../../data/repositories/pix_repository.dart';
 
 class PixTransferPage extends StatefulWidget {
@@ -32,7 +33,9 @@ class _PixTransferPageState extends State<PixTransferPage> {
   Future<void> _confirmarPix() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final valorCentavos = _parseValorCentavos(_valorController.text);
+    final valorCentavos = BrFormatters.parseCurrencyToCentavos(
+      _valorController.text,
+    );
     final confirmado = await showModalBottomSheet<bool>(
       context: context,
       showDragHandle: true,
@@ -50,7 +53,9 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 ),
                 const SizedBox(height: 16),
                 _ResumoLinha(
-                    label: 'Valor', value: _formatCurrency(valorCentavos)),
+                  label: 'Valor',
+                  value: BrFormatters.currencyFromCentavos(valorCentavos),
+                ),
                 _ResumoLinha(label: 'Tipo de chave', value: _tipoChave),
                 _ResumoLinha(
                     label: 'Chave', value: _chaveController.text.trim()),
@@ -121,31 +126,6 @@ class _PixTransferPageState extends State<PixTransferPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem)),
     );
-  }
-
-  int _parseValorCentavos(String input) {
-    final normalized = input.trim().replaceAll('.', '').replaceAll(',', '.');
-    final value = double.tryParse(normalized) ?? 0;
-    return (value * 100).round();
-  }
-
-  String _formatCurrency(int centavos) {
-    final reais = centavos ~/ 100;
-    final cents = (centavos % 100).toString().padLeft(2, '0');
-    return 'R\$ ${_formatThousands(reais)},$cents';
-  }
-
-  String _formatThousands(int value) {
-    final digits = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      final remaining = digits.length - i;
-      buffer.write(digits[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-    return buffer.toString();
   }
 
   @override
@@ -248,7 +228,9 @@ class _PixTransferPageState extends State<PixTransferPage> {
                   prefixIcon: Icon(Icons.payments_rounded),
                 ),
                 validator: (value) {
-                  final centavos = _parseValorCentavos(value ?? '');
+                  final centavos = BrFormatters.parseCurrencyToCentavos(
+                    value ?? '',
+                  );
                   if (centavos <= 0) return 'Informe um valor válido';
                   return null;
                 },

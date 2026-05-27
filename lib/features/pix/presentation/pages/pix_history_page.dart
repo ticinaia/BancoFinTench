@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/utils/br_formatters.dart';
 import '../../data/repositories/pix_repository.dart';
 
 class PixHistoryPage extends StatelessWidget {
@@ -128,31 +129,14 @@ class PixHistoryPage extends StatelessWidget {
 
   static String _formatValor(Map<String, dynamic> data) {
     final centavos = data['valorCentavos'];
-    if (centavos is int) return _formatCurrency(centavos);
-    if (centavos is num) return _formatCurrency(centavos.round());
+    if (centavos is int) return BrFormatters.currencyFromCentavos(centavos);
+    if (centavos is num) {
+      return BrFormatters.currencyFromCentavos(centavos.round());
+    }
 
     final valorAntigo = data['valor'];
     if (valorAntigo != null) return 'R\$ $valorAntigo';
     return 'R\$ 0,00';
-  }
-
-  static String _formatCurrency(int centavos) {
-    final reais = centavos ~/ 100;
-    final cents = (centavos % 100).toString().padLeft(2, '0');
-    return 'R\$ ${_formatThousands(reais)},$cents';
-  }
-
-  static String _formatThousands(int value) {
-    final digits = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      final remaining = digits.length - i;
-      buffer.write(digits[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-    return buffer.toString();
   }
 
   static String _formatDate(Object? value) {
@@ -161,13 +145,7 @@ class PixHistoryPage extends StatelessWidget {
     if (value is DateTime) date = value;
 
     if (date == null) return 'Data pendente';
-
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/$year $hour:$minute';
+    return BrFormatters.dateTime(date);
   }
 
   static String _statusLabel(String status) {
