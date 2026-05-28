@@ -111,9 +111,7 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 16),
                       Text(
                         'Dashboard inicial',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -126,19 +124,14 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               if (_biometriaDisponivel)
                 ElevatedButton.icon(
                   onPressed: _autenticarComBiometria,
                   icon: const Icon(Icons.fingerprint),
                   label: const Text('Autenticar com Digital'),
                 ),
-
-              if (_biometriaDisponivel)
-                const SizedBox(height: 16),
-
+              if (_biometriaDisponivel) const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(
@@ -148,9 +141,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 child: const Text('Transferência PIX'),
               ),
-
               const SizedBox(height: 16),
-
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(
@@ -160,9 +151,17 @@ class _HomePageState extends State<HomePage> {
                 },
                 child: const Text('Histórico PIX'),
               ),
-
               const SizedBox(height: 16),
-
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.cotacao,
+                  );
+                },
+                child: const Text('Cotações'),
+              ),
+              const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _logout,
                 icon: const Icon(Icons.logout),

@@ -6,6 +6,7 @@ import '../../features/auth/presentation/pages/cadastro_page.dart';
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_history_page.dart';
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_transfer_page.dart';
 import 'package:banco_fin_tech/features/splash/presentation/pages/splash_page.dart';
+import 'package:banco_fin_tech/features/auth/presentation/pages/cotacao_page.dart';
 import 'package:banco_fin_tech/features/auth/presentation/pages/login_page.dart';
 import 'package:banco_fin_tech/features/home/presentation/pages/home_page.dart';
 
@@ -25,6 +26,9 @@ class AppRouter {
 
       case AppRoutes.cadastro:
         return _buildRoute(const CadastroPage(), settings);
+
+      case AppRoutes.cotacao:
+        return _buildRoute(const CotacaoPage(), settings);
 
       case AppRoutes.pixTransfer:
         return MaterialPageRoute(
