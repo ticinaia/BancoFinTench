@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -18,10 +21,7 @@ class _HomePageState extends State<HomePage> {
   bool _autenticacaoLocalDisponivel = false;
   bool _biometriaDisponivel = false;
   bool _saldoVisivel = false;
-<<<<<<< Updated upstream
-=======
-
-  XFile? _imagemPerfil;
+  Uint8List? _imagemPerfilBytes;
 
   final List<Map<String, dynamic>> _ultimasTransferencias = [
     {
@@ -43,7 +43,6 @@ class _HomePageState extends State<HomePage> {
       'data': 'Ontem, 09:10',
     },
   ];
->>>>>>> Stashed changes
 
   @override
   void initState() {
@@ -52,13 +51,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _verificarBiometria() async {
-<<<<<<< Updated upstream
-    final disponivel = await AppPlugins.localAuth.canCheckBiometrics;
-    final suportado = await AppPlugins.localAuth.isDeviceSupported();
-
-    if (mounted) {
-      setState(() => _biometriaDisponivel = disponivel || suportado);
-=======
     if (kIsWeb) {
       setState(() {
         _autenticacaoLocalDisponivel = false;
@@ -69,7 +61,6 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final disponivel = await AppPlugins.localAuth.canCheckBiometrics;
-
       final suportado = await AppPlugins.localAuth.isDeviceSupported();
 
       if (mounted) {
@@ -85,7 +76,6 @@ class _HomePageState extends State<HomePage> {
           _biometriaDisponivel = false;
         });
       }
->>>>>>> Stashed changes
     }
   }
 
@@ -105,19 +95,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<bool> _autenticarComBiometria(String motivo) async {
-<<<<<<< Updated upstream
-    if (!_biometriaDisponivel) return true;
-
-    try {
-      return AppPlugins.localAuth.authenticate(
-=======
     if (kIsWeb) return true;
-
     if (!_autenticacaoLocalDisponivel) return true;
 
     try {
       return await AppPlugins.localAuth.authenticate(
->>>>>>> Stashed changes
         localizedReason: motivo,
         options: const AuthenticationOptions(
           biometricOnly: false,
@@ -125,12 +107,6 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     } catch (_) {
-<<<<<<< Updated upstream
-      if (mounted) _mostrarMensagem('Erro ao autenticar.');
-      return false;
-    }
-  }
-=======
       if (mounted) {
         _mostrarMensagem('Erro ao autenticar.');
       }
@@ -147,15 +123,19 @@ class _HomePageState extends State<HomePage> {
 
       if (imagem == null) return;
 
+      final bytes = await imagem.readAsBytes();
+
+      if (!mounted) return;
+
       setState(() {
-        _imagemPerfil = imagem;
+        _imagemPerfilBytes = bytes;
       });
 
-      if (mounted) {
-        _mostrarMensagem('Imagem de perfil atualizada.');
-      }
+      _mostrarMensagem('Imagem de perfil atualizada.');
     } catch (_) {
-      _mostrarMensagem('Erro ao selecionar imagem.');
+      if (mounted) {
+        _mostrarMensagem('Erro ao selecionar imagem.');
+      }
     }
   }
 
@@ -202,7 +182,6 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
->>>>>>> Stashed changes
 
   Future<void> _logout() async {
     await _authRepository.signOut();
@@ -226,6 +205,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final user = _authRepository.currentUser;
     final name = user?.email?.split('@').first ?? 'cliente';
+    final displayName = '${name[0].toUpperCase()}${name.substring(1)}';
 
     return Scaffold(
       appBar: AppBar(
@@ -242,13 +222,6 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-<<<<<<< Updated upstream
-            Text(
-              'Olá, $name',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-=======
             Row(
               children: [
                 GestureDetector(
@@ -256,13 +229,10 @@ class _HomePageState extends State<HomePage> {
                   child: CircleAvatar(
                     radius: 30,
                     backgroundColor: AppColors.primaryLight,
-                    backgroundImage: _imagemPerfil != null
-                        ? (kIsWeb
-                            ? NetworkImage(_imagemPerfil!.path)
-                            : FileImage(File(_imagemPerfil!.path))
-                                as ImageProvider)
+                    backgroundImage: _imagemPerfilBytes != null
+                        ? MemoryImage(_imagemPerfilBytes!)
                         : null,
-                    child: _imagemPerfil == null
+                    child: _imagemPerfilBytes == null
                         ? const Icon(
                             Icons.person_rounded,
                             color: Colors.white,
@@ -277,7 +247,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Olá, ${name[0].toUpperCase()}${name.substring(1)}',
+                        'Olá, $displayName',
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: AppColors.textSecondary,
@@ -291,7 +261,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ],
->>>>>>> Stashed changes
             ),
             const SizedBox(height: 12),
             _BalanceCard(
@@ -315,8 +284,17 @@ class _HomePageState extends State<HomePage> {
               childAspectRatio: 1.45,
               children: [
                 _ActionTile(
+                  icon: Icons.currency_exchange_rounded,
+                  label: 'Cotação',
+                  color: AppColors.accent,
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.cotacao,
+                  ),
+                ),
+                _ActionTile(
                   icon: Icons.pix_rounded,
-                  label: 'PIX',
+                  label: 'Transferência',
                   color: AppColors.secondary,
                   onTap: () => Navigator.pushNamed(
                     context,
@@ -332,60 +310,14 @@ class _HomePageState extends State<HomePage> {
                     AppRoutes.pixHistory,
                   ),
                 ),
-                _ActionTile(
-                  icon: Icons.fingerprint_rounded,
-                  label: 'Segurança',
-                  color: AppColors.primaryLight,
-                  onTap: () async {
-                    final ok = await _autenticarComBiometria(
-                      'Confirme sua identidade para testar a segurança',
-                    );
-                    if (ok && mounted) {
-                      _mostrarMensagem('Autenticação realizada com sucesso.');
-                    }
-                  },
-                ),
-                _ActionTile(
-                  icon: Icons.person_rounded,
-                  label: 'Perfil',
-                  color: AppColors.accent,
-                  onTap: () => _mostrarMensagem('Perfil em desenvolvimento.'),
-                ),
               ],
             ),
             const SizedBox(height: 24),
             Text(
-              'Resumo',
+              'Últimas transferências',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
-<<<<<<< Updated upstream
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.shield_rounded,
-                        color: AppColors.secondaryDark,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _biometriaDisponivel
-                            ? 'Biometria disponível para proteger ações importantes.'
-                            : 'Use senha ou bloqueio do aparelho para proteger suas ações.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-=======
             ..._ultimasTransferencias.map(
               (transferencia) {
                 final recebido = transferencia['tipo'] == 'recebido';
@@ -505,11 +437,10 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ],
->>>>>>> Stashed changes
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -565,18 +496,12 @@ class _BalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-<<<<<<< Updated upstream
-            saldoVisivel ? 'R\$ 2.450,00' : 'R\$ ••••••',
-=======
             saldoVisivel ? 'R\$ 2.450,00' : 'R\$ • • • • •',
->>>>>>> Stashed changes
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                 ),
           ),
-<<<<<<< Updated upstream
-=======
           const SizedBox(height: 4),
           Text(
             'Conta corrente',
@@ -584,7 +509,6 @@ class _BalanceCard extends StatelessWidget {
                   color: Colors.white70,
                 ),
           ),
->>>>>>> Stashed changes
           const SizedBox(height: 16),
           Row(
             children: [
