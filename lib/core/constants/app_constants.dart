@@ -7,7 +7,6 @@ class AppConstants {
   // Duração da Splash Screen
   static const Duration splashDuration = Duration(seconds: 3);
 
-  // API de cotacoes
   static const String awesomeApiBaseUrl = 'https://economia.awesomeapi.com.br';
 
   // Timeouts de rede
