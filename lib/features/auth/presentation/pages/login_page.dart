@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/services/firebase_service.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
@@ -90,32 +89,47 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
-            const SizedBox(height: 24),
-            const Icon(
-              Icons.account_balance_rounded,
-              color: AppColors.primary,
-              size: 72,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.account_balance_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
-              'BancoFinTech',
-              textAlign: TextAlign.center,
+              'Bem-vindo de volta',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              FirebaseService.isReady
-                  ? 'Firebase inicializado'
-                  : 'Firebase configurado, mas indisponivel neste ambiente',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              'Entre para acompanhar seu saldo, Pix e cotações em um só lugar.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             Form(
               key: _formKey,
               child: Column(
@@ -167,11 +181,22 @@ class _LoginPageState extends State<LoginPage> {
                   : const Icon(Icons.login),
               label: Text(_isLoading ? 'Entrando...' : 'Entrar'),
             ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.cadastro),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Nao tenho conta. Cadastrar'),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Ainda não tem conta?',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.cadastro),
+                  child: const Text('Criar conta'),
+                ),
+              ],
             ),
           ],
         ),

@@ -64,7 +64,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 ElevatedButton.icon(
                   onPressed: () => Navigator.pop(context, true),
                   icon: const Icon(Icons.fingerprint),
-                  label: const Text('Confirmar com segurança'),
+                  label: const Text('Enviar PIX'),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
@@ -148,13 +148,13 @@ class _PixTransferPageState extends State<PixTransferPage> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
             children: [
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.primaryDark,
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,13 +177,18 @@ class _PixTransferPageState extends State<PixTransferPage> {
                     Text(
                       'Confira os dados antes de confirmar.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
+                            color: Colors.white.withValues(alpha: 0.72),
                           ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
+              Text(
+                'Dados da transferência',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _tipoChave,
                 items: const [

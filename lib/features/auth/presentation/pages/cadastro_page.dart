@@ -90,24 +90,47 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastro')),
+      appBar: AppBar(),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
-            const SizedBox(height: 24),
-            const Icon(
-              Icons.person_add_rounded,
-              color: AppColors.primary,
-              size: 72,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.person_add_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
-              'Criar Conta',
-              textAlign: TextAlign.center,
+              'Crie sua conta',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 6),
+            Text(
+              'Leva menos de um minuto para começar a usar o BancoFinTech.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
+            const SizedBox(height: 28),
             Form(
               key: _formKey,
               child: Column(
@@ -178,9 +201,20 @@ class _CadastroPageState extends State<CadastroPage> {
               label: Text(_carregando ? 'Cadastrando...' : 'Cadastrar'),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Ja tenho uma conta'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Já tem conta?',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Entrar'),
+                ),
+              ],
             ),
           ],
         ),

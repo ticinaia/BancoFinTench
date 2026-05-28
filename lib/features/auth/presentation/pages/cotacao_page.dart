@@ -142,7 +142,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
     return RefreshIndicator(
       onRefresh: _carregarCotacoes,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (_cotacoes.isNotEmpty)
@@ -157,20 +157,29 @@ class _CotacaoPageState extends State<CotacaoPage> {
               ),
             ),
           ..._cotacoes.map((cotacao) {
+            final variationIsPositive = cotacao.variation >= 0;
+
             return Card(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor:
-                          AppColors.primaryLight.withValues(alpha: 0.1),
-                      child: Text(
-                        cotacao.code.substring(0, 1),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Center(
+                        child: Text(
+                          _symbolFor(cotacao.code),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                         ),
                       ),
                     ),
@@ -211,15 +220,44 @@ class _CotacaoPageState extends State<CotacaoPage> {
                                   ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '${_formatarVariacao(cotacao.variation)}%',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: cotacao.variation >= 0
-                                        ? AppColors.success
-                                        : AppColors.error,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: variationIsPositive
+                                ? AppColors.success.withValues(alpha: 0.10)
+                                : AppColors.error.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                variationIsPositive
+                                    ? Icons.trending_up_rounded
+                                    : Icons.trending_down_rounded,
+                                size: 14,
+                                color: variationIsPositive
+                                    ? AppColors.success
+                                    : AppColors.error,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${_formatarVariacao(cotacao.variation)}%',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: variationIsPositive
+                                          ? AppColors.success
+                                          : AppColors.error,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -259,6 +297,19 @@ class _CotacaoPageState extends State<CotacaoPage> {
     final sinal = variation >= 0 ? '+' : '';
 
     return '$sinal${variation.toStringAsFixed(2)}';
+  }
+
+  String _symbolFor(String code) {
+    switch (code) {
+      case 'USD':
+        return '\$';
+      case 'EUR':
+        return '€';
+      case 'BTC':
+        return '₿';
+      default:
+        return code.isEmpty ? '?' : code.substring(0, 1);
+    }
   }
 
   DateTime _ultimaAtualizacaoApi() {

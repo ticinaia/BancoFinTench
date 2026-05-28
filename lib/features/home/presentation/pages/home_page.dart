@@ -220,7 +220,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           children: [
             Row(
               children: [
@@ -228,7 +228,7 @@ class _HomePageState extends State<HomePage> {
                   onTap: _abrirSeletorImagem,
                   child: CircleAvatar(
                     radius: 30,
-                    backgroundColor: AppColors.primaryLight,
+                    backgroundColor: AppColors.primary,
                     backgroundImage: _imagemPerfilBytes != null
                         ? MemoryImage(_imagemPerfilBytes!)
                         : null,
@@ -248,14 +248,15 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         'Olá, $displayName',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                       Text(
-                        'Toque na foto para alterar',
-                        style: Theme.of(context).textTheme.bodySmall,
+                        'Toque na foto para personalizar',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                       ),
                     ],
                   ),
@@ -278,10 +279,10 @@ class _HomePageState extends State<HomePage> {
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
+              crossAxisCount: 3,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.45,
+              childAspectRatio: 0.92,
               children: [
                 _ActionTile(
                   icon: Icons.currency_exchange_rounded,
@@ -318,129 +319,94 @@ class _HomePageState extends State<HomePage> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
-            ..._ultimasTransferencias.map(
-              (transferencia) {
-                final recebido = transferencia['tipo'] == 'recebido';
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.outline),
+              ),
+              child: Column(
+                children: _ultimasTransferencias.map(
+                  (transferencia) {
+                    final recebido = transferencia['tipo'] == 'recebido';
+                    final isLast = transferencia == _ultimasTransferencias.last;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: recebido
-                                ? AppColors.secondary.withValues(alpha: 0.12)
-                                : AppColors.error.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Icon(
-                            recebido
-                                ? Icons.south_west_rounded
-                                : Icons.north_east_rounded,
-                            color: recebido
-                                ? AppColors.secondaryDark
-                                : AppColors.error,
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color:
+                                isLast ? Colors.transparent : AppColors.outline,
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                transferencia['nome'],
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                transferencia['data'],
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: recebido
-                                      ? AppColors.secondary
-                                          .withValues(alpha: 0.10)
-                                      : AppColors.error.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  recebido ? 'Recebido' : 'Enviado',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: recebido
-                                        ? AppColors.secondaryDark
-                                        : AppColors.error,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${recebido ? '+' : '-'} ${NumberFormat.currency(
-                                locale: 'pt_BR',
-                                symbol: 'R\$',
-                              ).format(transferencia['valor'])}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: recebido
-                                    ? AppColors.secondaryDark
-                                    : AppColors.error,
-                              ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: recebido
+                                  ? AppColors.secondary.withValues(alpha: 0.12)
+                                  : AppColors.error.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            const SizedBox(height: 6),
-                            Icon(
+                            child: Icon(
                               recebido
-                                  ? Icons.arrow_downward
-                                  : Icons.arrow_upward,
-                              size: 16,
+                                  ? Icons.south_west_rounded
+                                  : Icons.north_east_rounded,
                               color: recebido
                                   ? AppColors.secondaryDark
                                   : AppColors.error,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  transferencia['nome'],
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  transferencia['data'],
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${recebido ? '+' : '-'} ${NumberFormat.currency(
+                              locale: 'pt_BR',
+                              symbol: 'R\$',
+                            ).format(transferencia['valor'])}',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: recebido
+                                  ? AppColors.secondaryDark
+                                  : AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ).toList(),
+              ),
             ),
           ],
         ),
@@ -465,10 +431,17 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.primaryDark,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.18),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,7 +451,7 @@ class _BalanceCard extends StatelessWidget {
               Text(
                 'Saldo disponível',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
+                      color: Colors.white.withValues(alpha: 0.72),
                     ),
               ),
               const Spacer(),
@@ -506,8 +479,13 @@ class _BalanceCard extends StatelessWidget {
           Text(
             'Conta corrente',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
+                  color: Colors.white.withValues(alpha: 0.66),
                 ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.10),
           ),
           const SizedBox(height: 16),
           Row(
@@ -528,7 +506,7 @@ class _BalanceCard extends StatelessWidget {
                           ? 'Protegido pelo bloqueio do aparelho'
                           : 'Protegido no app',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
+                        color: Colors.white.withValues(alpha: 0.72),
                       ),
                 ),
               ),
@@ -555,29 +533,36 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: AppColors.outline),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color),
               ),
+              const SizedBox(height: 10),
               Text(
                 label,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
               ),
             ],

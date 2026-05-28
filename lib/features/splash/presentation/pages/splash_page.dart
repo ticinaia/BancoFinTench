@@ -83,16 +83,7 @@ class _SplashPageState extends State<SplashPage>
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primaryDark,
-              AppColors.primary,
-              AppColors.primaryLight,
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
+          color: AppColors.primaryDark,
         ),
         child: SafeArea(
           child: Column(
@@ -160,10 +151,9 @@ class _SplashPageState extends State<SplashPage>
       height: 120,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 2,
+          color: Colors.white.withValues(alpha: 0.18),
         ),
       ),
       child: Center(
@@ -205,10 +195,10 @@ class _SplashPageState extends State<SplashPage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.secondary.withValues(alpha: 0.2),
+            color: AppColors.secondary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: AppColors.secondary.withValues(alpha: 0.4),
+              color: AppColors.secondary.withValues(alpha: 0.24),
             ),
           ),
           child: Text(
