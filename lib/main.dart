@@ -43,7 +43,7 @@ class BancoFinTechApp extends StatelessWidget {
       themeMode: ThemeMode.system,
 
       // Rota inicial
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.splash,
 
       // Gerador de rotas nomeadas
       onGenerateRoute: AppRouter.onGenerateRoute,
