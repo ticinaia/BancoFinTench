@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -99,6 +100,9 @@ class _PixTransferPageState extends State<PixTransferPage> {
       if (!mounted) return;
       _mostrarMensagem('PIX enviado com sucesso.');
       Navigator.pop(context);
+    } on StateError catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(error.message);
     } catch (_) {
       if (!mounted) return;
       _mostrarMensagem('Não foi possível enviar o PIX.');
@@ -108,18 +112,24 @@ class _PixTransferPageState extends State<PixTransferPage> {
   }
 
   Future<bool> _autenticarAcaoSensivel() async {
-    final biometriaDisponivel = await AppPlugins.localAuth.canCheckBiometrics;
-    final dispositivoSuporta = await AppPlugins.localAuth.isDeviceSupported();
+    if (kIsWeb) return true;
 
-    if (!biometriaDisponivel && !dispositivoSuporta) return true;
+    try {
+      final biometriaDisponivel = await AppPlugins.localAuth.canCheckBiometrics;
+      final dispositivoSuporta = await AppPlugins.localAuth.isDeviceSupported();
 
-    return AppPlugins.localAuth.authenticate(
-      localizedReason: 'Confirme sua identidade para enviar o PIX',
-      options: const AuthenticationOptions(
-        biometricOnly: false,
-        stickyAuth: true,
-      ),
-    );
+      if (!biometriaDisponivel && !dispositivoSuporta) return true;
+
+      return AppPlugins.localAuth.authenticate(
+        localizedReason: 'Confirme sua identidade para enviar o PIX',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+        ),
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   void _mostrarMensagem(String mensagem) {

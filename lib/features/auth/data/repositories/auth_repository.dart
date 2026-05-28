@@ -14,7 +14,7 @@ class AuthRepository {
   final FirebaseAuth? _firebaseAuth;
   final UserRepository _userRepository;
 
-  bool get isAvailable => _firebaseAuth != null && _userRepository.isAvailable;
+  bool get isAvailable => _firebaseAuth != null;
 
   User? get currentUser => _firebaseAuth?.currentUser;
 
@@ -70,7 +70,14 @@ class AuthRepository {
       updatedAt: now,
     );
 
-    await _userRepository.createOrUpdate(appUser);
+    if (_userRepository.isAvailable) {
+      try {
+        await _userRepository.createOrUpdate(appUser);
+      } catch (_) {
+        // A autenticacao ja foi concluida. O perfil pode ser sincronizado depois.
+      }
+    }
+
     return appUser;
   }
 

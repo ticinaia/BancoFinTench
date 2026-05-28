@@ -10,6 +10,8 @@ class PixRepository {
 
   final FirebaseFirestore? _firestore;
 
+  bool get isAvailable => _firestore != null && FirebaseService.auth != null;
+
   String get _userId {
     final user = FirebaseService.auth?.currentUser;
     if (user == null) {
@@ -34,6 +36,10 @@ class PixRepository {
     required String chave,
     required int valorCentavos,
   }) async {
+    if (!isAvailable) {
+      throw StateError('Pix indisponivel neste ambiente.');
+    }
+
     await _pixCollection.add({
       'chave': chave,
       'valorCentavos': valorCentavos,
@@ -44,6 +50,10 @@ class PixRepository {
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> watchPixHistory() {
-    return _pixCollection.orderBy('data', descending: true).snapshots();
+    try {
+      return _pixCollection.orderBy('data', descending: true).snapshots();
+    } catch (error) {
+      return Stream<QuerySnapshot<Map<String, dynamic>>>.error(error);
+    }
   }
 }
