@@ -74,8 +74,7 @@ class _LoginPageState extends State<LoginPage> {
       _showError(_firebaseAuthMessage(error));
     } catch (error) {
       if (!mounted) return;
-      _showError(
-          'Nao foi possivel entrar. Verifique e-mail, senha e Firebase.');
+      _showError('Não foi possível entrar. Verifique sua conexão e tente novamente.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -86,19 +85,21 @@ class _LoginPageState extends State<LoginPage> {
   String _firebaseAuthMessage(FirebaseAuthException error) {
     switch (error.code) {
       case 'invalid-email':
-        return 'Informe um e-mail valido.';
+        return 'Informe um e-mail válido.';
       case 'invalid-credential':
       case 'user-not-found':
       case 'wrong-password':
-        return 'E-mail ou senha incorretos.';
+        return 'E-mail ou senha incorretos. Verifique e tente novamente.';
       case 'operation-not-allowed':
-        return 'Login por e-mail/senha nao foi habilitado no Firebase Authentication.';
+        return 'Este tipo de login não está disponível no momento.';
       case 'too-many-requests':
-        return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+        return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
       case 'network-request-failed':
-        return 'Sem conexao com o Firebase. Verifique sua internet.';
+        return 'Sem conexão com a internet. Verifique sua rede.';
+      case 'user-disabled':
+        return 'Esta conta foi suspensa. Entre em contato com o suporte.';
       default:
-        return 'Erro no Firebase Auth (${error.code}).';
+        return 'Não foi possível entrar. Tente novamente em instantes.';
     }
   }
 

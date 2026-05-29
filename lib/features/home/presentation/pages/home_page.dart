@@ -664,17 +664,58 @@ class _RecentPixList extends StatelessWidget {
         final docs = snapshot.data?.docs ?? [];
         if (docs.isEmpty) {
           return Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.outline),
             ),
-            child: Text(
-              'Nenhum PIX por enquanto.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(
+                    Icons.pix_rounded,
+                    size: 32,
+                    color: AppColors.secondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nenhuma transferência ainda',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Faça seu primeiro PIX e ele\naparecerá aqui.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.pixTransfer,
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: const Text('Fazer primeiro PIX'),
+                  ),
+                ),
+              ],
             ),
           );
         }

@@ -31,6 +31,23 @@ class _PixTransferPageState extends State<PixTransferPage> {
   bool _enviando = false;
   PixRecipient? _recipient;
 
+  // Formata o campo de valor como moeda brasileira em tempo real
+  void _onValorChanged(String rawText) {
+    final digits = rawText.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.isEmpty) {
+      _valorController.value = const TextEditingValue(text: '');
+      return;
+    }
+    final centavos = int.tryParse(digits) ?? 0;
+    final formatted = BrFormatters.currencyFromCentavos(centavos)
+        .replaceAll('R\$\u00a0', '')
+        .trim();
+    _valorController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
   @override
   void dispose() {
     _chaveController.dispose();
@@ -41,9 +58,8 @@ class _PixTransferPageState extends State<PixTransferPage> {
   Future<void> _confirmarPix() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final valorCentavos = BrFormatters.parseCurrencyToCentavos(
-      _valorController.text,
-    );
+    final digits = _valorController.text.replaceAll(RegExp(r'[^\d]'), '');
+    final valorCentavos = int.tryParse(digits) ?? 0;
 
     try {
       final saldo = await _pixRepository.getBalanceCentavos();
@@ -251,10 +267,16 @@ class _PixTransferPageState extends State<PixTransferPage> {
     setState(() {
       _tipoChave = parsed.keyType;
       _chaveController.text = parsed.key;
-      if (parsed.valorCentavos != null) {
-        _valorController.text = BrFormatters.currencyFromCentavos(
-          parsed.valorCentavos!,
-        ).replaceAll('R\$ ', '');
+      if (parsed.valorCentavos != null && parsed.valorCentavos! > 0) {
+        final centavos = parsed.valorCentavos!;
+        final formatted = BrFormatters.currencyFromCentavos(centavos)
+            .replaceAll('R\$ ', '')
+            .replaceAll('R\$ ', '')
+            .trim();
+        _valorController.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
       }
     });
     _mostrarMensagem('Dados PIX preenchidos.');
@@ -583,22 +605,24 @@ class _PixTransferPageState extends State<PixTransferPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _valorController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: TextInputType.number,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                  FilteringTextInputFormatter.digitsOnly,
                 ],
-                decoration: const InputDecoration(
+                onChanged: _onValorChanged,
+                decoration: InputDecoration(
                   labelText: 'Valor',
+                  prefixIcon: const Icon(Icons.payments_rounded),
                   prefixText: 'R\$ ',
-                  prefixIcon: Icon(Icons.payments_rounded),
+                  hintText: '0,00',
+                  helperText: 'Digite apenas os números',
+                  helperStyle: Theme.of(context).textTheme.labelSmall,
                 ),
                 validator: (value) {
-                  final centavos = BrFormatters.parseCurrencyToCentavos(
-                    value ?? '',
-                  );
+                  final digits = (value ?? '').replaceAll(RegExp(r'[^\d]'), '');
+                  final centavos = int.tryParse(digits) ?? 0;
                   if (centavos <= 0) return 'Informe um valor válido';
+                  if (centavos < 1) return 'Valor mínimo: R\$ 0,01';
                   return null;
                 },
               ),

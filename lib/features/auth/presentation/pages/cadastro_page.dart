@@ -42,7 +42,7 @@ class _CadastroPageState extends State<CadastroPage> {
 
     if (!_authRepository.isAvailable) {
       _mostrarErro(
-          'Firebase indisponivel. Habilite Authentication no console.');
+          'Serviço indisponível no momento. Tente novamente mais tarde.');
       return;
     }
 
@@ -66,11 +66,11 @@ class _CadastroPageState extends State<CadastroPage> {
     } on FirebaseException catch (erro) {
       if (!mounted) return;
       _mostrarErro(
-        'Erro no Firebase (${erro.plugin}/${erro.code}). Confira as regras e servicos habilitados.',
+        'Serviço temporariamente indisponível. Tente novamente em instantes.',
       );
     } catch (erro) {
       if (!mounted) return;
-      _mostrarErro('Nao foi possivel criar a conta: $erro');
+      _mostrarErro('Não foi possível criar a conta. Tente novamente em instantes.');
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
@@ -79,17 +79,17 @@ class _CadastroPageState extends State<CadastroPage> {
   String _mensagemFirebaseAuth(FirebaseAuthException erro) {
     switch (erro.code) {
       case 'email-already-in-use':
-        return 'Este e-mail ja esta cadastrado. Volte para o login.';
+        return 'Este e-mail já está cadastrado. Volte para o login.';
       case 'invalid-email':
-        return 'Informe um e-mail valido.';
+        return 'Informe um e-mail válido.';
       case 'operation-not-allowed':
-        return 'Login por e-mail/senha nao foi habilitado no Firebase Authentication.';
+        return 'Cadastro não disponível no momento. Tente mais tarde.';
       case 'weak-password':
-        return 'A senha e muito fraca. Use pelo menos 6 caracteres.';
+        return 'Senha muito fraca. Use pelo menos 6 caracteres.';
       case 'network-request-failed':
-        return 'Sem conexao com o Firebase. Verifique sua internet.';
+        return 'Sem conexão com a internet. Verifique sua rede.';
       default:
-        return 'Erro no Firebase Auth (${erro.code}).';
+        return 'Não foi possível criar a conta. Tente novamente em instantes.';
     }
   }
 
