@@ -6,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/app_plugins.dart';
 import '../../../../core/utils/br_formatters.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import '../../data/repositories/pix_repository.dart';
 
 class PixTransferPage extends StatefulWidget {
@@ -20,6 +21,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
   final _chaveController = TextEditingController();
   final _valorController = TextEditingController();
   final _pixRepository = PixRepository();
+  final _authRepository = AuthRepository();
 
   String _tipoChave = 'E-mail';
   bool _enviando = false;
@@ -112,24 +114,72 @@ class _PixTransferPageState extends State<PixTransferPage> {
   }
 
   Future<bool> _autenticarAcaoSensivel() async {
-    if (kIsWeb) return true;
+    if (kIsWeb) return _confirmarComPin();
 
     try {
       final biometriaDisponivel = await AppPlugins.localAuth.canCheckBiometrics;
       final dispositivoSuporta = await AppPlugins.localAuth.isDeviceSupported();
 
-      if (!biometriaDisponivel && !dispositivoSuporta) return true;
+      if (!biometriaDisponivel && !dispositivoSuporta) {
+        return _confirmarComPin();
+      }
 
-      return AppPlugins.localAuth.authenticate(
+      final autenticado = await AppPlugins.localAuth.authenticate(
         localizedReason: 'Confirme sua identidade para enviar o PIX',
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
         ),
       );
+
+      if (autenticado) return true;
+      return _confirmarComPin();
     } catch (_) {
-      return false;
+      return _confirmarComPin();
     }
+  }
+
+  Future<bool> _confirmarComPin() async {
+    final pinController = TextEditingController();
+
+    final pin = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirmar com PIN'),
+          content: TextField(
+            controller: pinController,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            decoration: const InputDecoration(
+              labelText: 'PIN do app',
+              counterText: '',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                context,
+                pinController.text.trim(),
+              ),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    pinController.dispose();
+    if (pin == null || pin.isEmpty) return false;
+    return _authRepository.validateAppPin(pin);
   }
 
   void _mostrarMensagem(String mensagem) {

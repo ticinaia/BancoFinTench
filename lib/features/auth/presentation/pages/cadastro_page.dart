@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../domain/validators/br_auth_validators.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -14,16 +15,23 @@ class CadastroPage extends StatefulWidget {
 
 class _CadastroPageState extends State<CadastroPage> {
   final _formKey = GlobalKey<FormState>();
+  final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
+  final _cpfController = TextEditingController();
+  final _telefoneController = TextEditingController();
   final _senhaController = TextEditingController();
   final _confirmarSenhaController = TextEditingController();
   final _authRepository = AuthRepository();
 
   bool _carregando = false;
+  bool _aceitouTermos = false;
 
   @override
   void dispose() {
+    _nomeController.dispose();
     _emailController.dispose();
+    _cpfController.dispose();
+    _telefoneController.dispose();
     _senhaController.dispose();
     _confirmarSenhaController.dispose();
     super.dispose();
@@ -44,10 +52,14 @@ class _CadastroPageState extends State<CadastroPage> {
       await _authRepository.createUser(
         email: _emailController.text.trim(),
         password: _senhaController.text.trim(),
+        name: _nomeController.text.trim(),
+        cpf: _onlyDigits(_cpfController.text),
+        phone: _onlyDigits(_telefoneController.text),
+        acceptedTerms: _aceitouTermos,
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      Navigator.pushReplacementNamed(context, AppRoutes.emailVerification);
     } on FirebaseAuthException catch (erro) {
       if (!mounted) return;
       _mostrarErro(_mensagemFirebaseAuth(erro));
@@ -85,6 +97,10 @@ class _CadastroPageState extends State<CadastroPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem)),
     );
+  }
+
+  String _onlyDigits(String value) {
+    return BrAuthValidators.onlyDigits(value);
   }
 
   @override
@@ -136,6 +152,23 @@ class _CadastroPageState extends State<CadastroPage> {
               child: Column(
                 children: [
                   TextFormField(
+                    controller: _nomeController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome completo',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                    ),
+                    validator: (valor) {
+                      final text = valor?.trim() ?? '';
+                      if (text.isEmpty) return 'Informe seu nome';
+                      if (text.split(' ').length < 2) {
+                        return 'Informe nome e sobrenome';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
@@ -146,8 +179,42 @@ class _CadastroPageState extends State<CadastroPage> {
                       if (valor == null || valor.trim().isEmpty) {
                         return 'Informe seu e-mail';
                       }
-                      if (!valor.contains('@')) {
-                        return 'Informe um e-mail valido';
+                      if (!BrAuthValidators.isValidEmail(valor)) {
+                        return 'Use um e-mail válido com @ e .com';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _cpfController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'CPF',
+                      prefixIcon: Icon(Icons.credit_card_outlined),
+                    ),
+                    validator: (valor) {
+                      final digits = _onlyDigits(valor ?? '');
+                      if (digits.isEmpty) return 'Informe seu CPF';
+                      if (!BrAuthValidators.isValidCpf(digits)) {
+                        return 'Informe um CPF válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _telefoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Celular',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                    validator: (valor) {
+                      final digits = _onlyDigits(valor ?? '');
+                      if (digits.isEmpty) return 'Informe seu celular';
+                      if (!BrAuthValidators.isValidBrPhone(digits)) {
+                        return 'Informe um celular com 9 dígitos';
                       }
                       return null;
                     },
@@ -185,12 +252,27 @@ class _CadastroPageState extends State<CadastroPage> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    value: _aceitouTermos,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text(
+                      'Li e aceito os termos de uso e a política de privacidade.',
+                    ),
+                    onChanged: (value) {
+                      setState(() => _aceitouTermos = value ?? false);
+                    },
+                    subtitle: !_aceitouTermos
+                        ? const Text('Obrigatório para criar a conta')
+                        : null,
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _carregando ? null : _cadastrar,
+              onPressed: _carregando || !_aceitouTermos ? null : _cadastrar,
               icon: _carregando
                   ? const SizedBox(
                       width: 18,

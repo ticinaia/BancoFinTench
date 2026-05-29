@@ -25,15 +25,46 @@ class UserRepository {
     final snapshot = await docRef.get();
 
     if (snapshot.exists) {
-      await docRef.update({
+      final data = <String, Object?>{
         'email': user.email,
         'name': user.name,
         'updatedAt': user.updatedAt,
-      });
+      };
+
+      if (user.cpf != null) data['cpf'] = user.cpf;
+      if (user.phone != null) data['phone'] = user.phone;
+
+      await docRef.update(data);
       return;
     }
 
     await docRef.set(user.toMap());
+  }
+
+  Future<void> updateProfile({
+    required String id,
+    required String name,
+    required String cpf,
+    required String phone,
+  }) async {
+    await _users.doc(id).update({
+      'name': name,
+      'cpf': cpf,
+      'phone': phone,
+      'updatedAt': DateTime.now(),
+    });
+  }
+
+  Future<void> registerAccessLog({
+    required String userId,
+    required String action,
+    required String platform,
+  }) async {
+    await _users.doc(userId).collection('accessLogs').add({
+      'action': action,
+      'platform': platform,
+      'createdAt': DateTime.now(),
+    });
   }
 
   Future<AppUser?> findById(String id) async {

@@ -212,6 +212,11 @@ class _HomePageState extends State<HomePage> {
         title: const Text('BancoFinTech'),
         actions: [
           IconButton(
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.security),
+            icon: const Icon(Icons.shield_outlined),
+            tooltip: 'Segurança',
+          ),
+          IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sair',

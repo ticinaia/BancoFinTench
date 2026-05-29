@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../domain/validators/br_auth_validators.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,6 +20,21 @@ class _LoginPageState extends State<LoginPage> {
   final _authRepository = AuthRepository();
 
   bool _isLoading = false;
+  bool _handledRouteMessage = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_handledRouteMessage) return;
+
+    final message = ModalRoute.of(context)?.settings.arguments as String?;
+    if (message != null && message.isNotEmpty) {
+      _handledRouteMessage = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showError(message);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -46,7 +62,13 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      var nextRoute = AppRoutes.emailVerification;
+      if (_authRepository.isEmailVerified) {
+        final hasPin = await _authRepository.hasAppPin();
+        if (!mounted) return;
+        nextRoute = hasPin ? AppRoutes.authLock : AppRoutes.pinSetup;
+      }
+      Navigator.pushReplacementNamed(context, nextRoute);
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
       _showError(_firebaseAuthMessage(error));
@@ -84,6 +106,62 @@ class _LoginPageState extends State<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  Future<void> _recuperarSenha() async {
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Recuperar senha'),
+          content: TextField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: 'E-mail',
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                context,
+                emailController.text.trim(),
+              ),
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    emailController.dispose();
+
+    if (email == null || email.isEmpty) return;
+    if (!BrAuthValidators.isValidEmail(email)) {
+      _showError('Informe um e-mail válido terminado em .com ou .com.br.');
+      return;
+    }
+
+    try {
+      await _authRepository.sendPasswordResetEmail(email);
+      if (!mounted) return;
+      _showError('Enviamos um link de recuperação para seu e-mail.');
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+      _showError(_firebaseAuthMessage(error));
+    } catch (_) {
+      if (!mounted) return;
+      _showError('Não foi possível enviar o e-mail de recuperação.');
+    }
   }
 
   @override
@@ -145,8 +223,8 @@ class _LoginPageState extends State<LoginPage> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Informe seu e-mail';
                       }
-                      if (!value.trim().contains('@')) {
-                        return 'Informe um e-mail valido';
+                      if (!BrAuthValidators.isValidEmail(value)) {
+                        return 'Use um e-mail válido com @ e .com';
                       }
                       return null;
                     },
@@ -165,6 +243,13 @@ class _LoginPageState extends State<LoginPage> {
                       }
                       return null;
                     },
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _recuperarSenha,
+                      child: const Text('Esqueci minha senha'),
+                    ),
                   ),
                 ],
               ),

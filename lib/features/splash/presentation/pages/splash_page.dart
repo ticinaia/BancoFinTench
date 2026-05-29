@@ -64,8 +64,21 @@ class _SplashPageState extends State<SplashPage>
     if (!mounted) return;
 
     final authRepository = AuthRepository();
-    final nextRoute =
-        authRepository.currentUser == null ? AppRoutes.login : AppRoutes.home;
+    await authRepository.reloadCurrentUser();
+    if (!mounted) return;
+
+    final user = authRepository.currentUser;
+    var nextRoute = AppRoutes.login;
+
+    if (user != null) {
+      if (!user.emailVerified) {
+        nextRoute = AppRoutes.emailVerification;
+      } else {
+        final hasPin = await authRepository.hasAppPin();
+        if (!mounted) return;
+        nextRoute = hasPin ? AppRoutes.authLock : AppRoutes.pinSetup;
+      }
+    }
 
     Navigator.pushReplacementNamed(context, nextRoute);
   }

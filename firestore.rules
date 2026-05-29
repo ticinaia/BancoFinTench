@@ -18,6 +18,11 @@ service cloud.firestore {
         allow read, create: if isOwner(userId);
         allow update, delete: if false;
       }
+
+      match /accessLogs/{logId} {
+        allow read, create: if isOwner(userId);
+        allow update, delete: if false;
+      }
     }
   }
 }

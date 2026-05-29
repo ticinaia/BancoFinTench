@@ -6,6 +6,7 @@ class AppConstants {
 
   // Duração da Splash Screen
   static const Duration splashDuration = Duration(seconds: 3);
+  static const Duration sessionTimeout = Duration(minutes: 5);
 
   static const String awesomeApiBaseUrl = 'https://economia.awesomeapi.com.br';
 
@@ -17,6 +18,7 @@ class AppConstants {
   static const String tokenKey = 'auth_token';
   static const String userIdKey = 'user_id';
   static const String biometricEnabledKey = 'biometric_enabled';
+  static const String appPinKey = 'app_pin';
 
   // Colecoes do Firestore
   static const String usersCollection = 'users';
