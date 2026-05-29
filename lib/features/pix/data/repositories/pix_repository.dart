@@ -45,14 +45,6 @@ class PixRepository {
     return _userDoc.collection('notifications');
   }
 
-  CollectionReference<Map<String, dynamic>> get _monthlySummariesCollection {
-    return _userDoc.collection('pix_monthly_summaries');
-  }
-
-  CollectionReference<Map<String, dynamic>> get _dailySummariesCollection {
-    return _userDoc.collection('pix_daily_summaries');
-  }
-
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchAccount() {
     try {
       return _userDoc.snapshots();
@@ -84,24 +76,20 @@ class PixRepository {
     }
   }
 
-  Stream<PixSummary> watchMonthlySummary() async* {
+  Stream<PixSummary> watchMonthlySummary() {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month);
-    final summaryRef = _monthlySummaryRef(monthStart);
+    final nextMonth = DateTime(monthStart.year, monthStart.month + 1);
 
-    await _ensureMonthlySummary(monthStart);
-
-    yield* summaryRef.snapshots().map((snapshot) {
-      final data = snapshot.data();
-      if (data == null) {
-        return const PixSummary(entradasCentavos: 0, saidasCentavos: 0);
-      }
-
-      return PixSummary(
-        entradasCentavos: _intFrom(data['entradasCentavos']),
-        saidasCentavos: _intFrom(data['saidasCentavos']),
-      );
-    });
+    try {
+      return _pixCollection
+          .where('createdAt', isGreaterThanOrEqualTo: monthStart)
+          .where('createdAt', isLessThan: nextMonth)
+          .snapshots()
+          .map(_summaryFromSnapshot);
+    } catch (error) {
+      return Stream<PixSummary>.error(error);
+    }
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFavoriteRecipients() {
@@ -146,7 +134,7 @@ class PixRepository {
       return cached.summary;
     }
 
-    final summary = await _ensureMonthlySummary(monthStart);
+    final summary = await _calculateMonthlySummary(monthStart);
     _monthlySummaryCache[cacheKey] = _MonthlySummaryCache(summary, now);
     return summary;
   }
@@ -195,21 +183,14 @@ class PixRepository {
 
     final now = DateTime.now();
     final docRef = _pixCollection.doc();
-    final monthStart = DateTime(now.year, now.month);
     final dayStart = DateTime(now.year, now.month, now.day);
-    final monthlySummaryRef = _monthlySummaryRef(monthStart);
-    final dailySummaryRef = _dailySummaryRef(dayStart);
-    await _ensureMonthlySummary(monthStart);
-    await _ensureDailySummary(dayStart);
+    final dailySent = await _calculateDailySentCentavos(dayStart);
 
     try {
       await _firestore!.runTransaction((transaction) async {
         final userSnapshot = await transaction.get(_userDoc);
-        final dailySummarySnapshot = await transaction.get(dailySummaryRef);
         final userData = userSnapshot.data();
         final balance = _balanceFrom(userData);
-        final dailySent =
-            _intFrom(dailySummarySnapshot.data()?['sentCentavos']);
 
         if (dailySent + valorCentavos > dailyLimitCentavos) {
           throw StateError('Limite diário de PIX excedido.');
@@ -247,26 +228,6 @@ class PixRepository {
           'data': FieldValue.serverTimestamp(),
           'createdAt': now,
         });
-
-        transaction.set(
-          monthlySummaryRef,
-          {
-            'entradasCentavos': FieldValue.increment(0),
-            'saidasCentavos': FieldValue.increment(valorCentavos),
-            'monthStart': monthStart,
-            'updatedAt': now,
-          },
-          SetOptions(merge: true),
-        );
-        transaction.set(
-          dailySummaryRef,
-          {
-            'sentCentavos': FieldValue.increment(valorCentavos),
-            'dayStart': dayStart,
-            'updatedAt': now,
-          },
-          SetOptions(merge: true),
-        );
       });
     } on StateError catch (error) {
       if (error.message == 'Limite diário de PIX excedido.') {
@@ -319,9 +280,6 @@ class PixRepository {
 
     final now = DateTime.now();
     final docRef = _pixCollection.doc();
-    final monthStart = DateTime(now.year, now.month);
-    final monthlySummaryRef = _monthlySummaryRef(monthStart);
-    await _ensureMonthlySummary(monthStart);
 
     await _firestore!.runTransaction((transaction) async {
       final userSnapshot = await transaction.get(_userDoc);
@@ -349,16 +307,6 @@ class PixRepository {
         'data': FieldValue.serverTimestamp(),
         'createdAt': now,
       });
-      transaction.set(
-        monthlySummaryRef,
-        {
-          'entradasCentavos': FieldValue.increment(valorCentavos),
-          'saidasCentavos': FieldValue.increment(0),
-          'monthStart': monthStart,
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
     });
 
     await _registerNotification(
@@ -397,22 +345,6 @@ class PixRepository {
       throw StateError('Somente PIX pendente pode ser cancelado.');
     }
 
-    final existingDirection = (existingData['direction'] ?? 'sent').toString();
-    final existingCreatedAt = _dateFrom(existingData['createdAt']);
-    final existingMonthStart = DateTime(
-      existingCreatedAt.year,
-      existingCreatedAt.month,
-    );
-    final existingDayStart = DateTime(
-      existingCreatedAt.year,
-      existingCreatedAt.month,
-      existingCreatedAt.day,
-    );
-    await _ensureMonthlySummary(existingMonthStart);
-    if (existingDirection != 'received') {
-      await _ensureDailySummary(existingDayStart);
-    }
-
     await _firestore!.runTransaction((transaction) async {
       final pixSnapshot = await transaction.get(docRef);
       final pixData = pixSnapshot.data();
@@ -428,11 +360,6 @@ class PixRepository {
 
       final value = _intFrom(pixData['valorCentavos']);
       final direction = (pixData['direction'] ?? 'sent').toString();
-      final createdAt = _dateFrom(pixData['createdAt']);
-      final monthStart = DateTime(createdAt.year, createdAt.month);
-      final dayStart = DateTime(createdAt.year, createdAt.month, createdAt.day);
-      final monthlySummaryRef = _monthlySummaryRef(monthStart);
-      final dailySummaryRef = _dailySummaryRef(dayStart);
       final userSnapshot = await transaction.get(_userDoc);
       final balance = _balanceFrom(userSnapshot.data());
       final balanceDelta = direction == 'received' ? -value : value;
@@ -445,38 +372,6 @@ class PixRepository {
         'balanceCentavos': balance + balanceDelta,
         'updatedAt': DateTime.now(),
       });
-      if (direction == 'received') {
-        transaction.set(
-          monthlySummaryRef,
-          {
-            'entradasCentavos': FieldValue.increment(-value),
-            'saidasCentavos': FieldValue.increment(0),
-            'monthStart': monthStart,
-            'updatedAt': DateTime.now(),
-          },
-          SetOptions(merge: true),
-        );
-      } else {
-        transaction.set(
-          monthlySummaryRef,
-          {
-            'entradasCentavos': FieldValue.increment(0),
-            'saidasCentavos': FieldValue.increment(-value),
-            'monthStart': monthStart,
-            'updatedAt': DateTime.now(),
-          },
-          SetOptions(merge: true),
-        );
-        transaction.set(
-          dailySummaryRef,
-          {
-            'sentCentavos': FieldValue.increment(-value),
-            'dayStart': dayStart,
-            'updatedAt': DateTime.now(),
-          },
-          SetOptions(merge: true),
-        );
-      }
     });
     _clearMonthlySummaryCache();
   }
@@ -495,44 +390,6 @@ class PixRepository {
     }
   }
 
-  Future<PixSummary> _ensureMonthlySummary(DateTime monthStart) async {
-    final summaryRef = _monthlySummaryRef(monthStart);
-    final summarySnapshot = await summaryRef.get();
-    final summaryData = summarySnapshot.data();
-    if (summaryData != null) {
-      return PixSummary(
-        entradasCentavos: _intFrom(summaryData['entradasCentavos']),
-        saidasCentavos: _intFrom(summaryData['saidasCentavos']),
-      );
-    }
-
-    final summary = await _calculateMonthlySummary(monthStart);
-    return _firestore!.runTransaction((transaction) async {
-      final transactionSnapshot = await transaction.get(summaryRef);
-      final transactionData = transactionSnapshot.data();
-      if (transactionData != null) {
-        return PixSummary(
-          entradasCentavos: _intFrom(transactionData['entradasCentavos']),
-          saidasCentavos: _intFrom(transactionData['saidasCentavos']),
-        );
-      }
-
-      transaction.set(
-        summaryRef,
-        {
-          'entradasCentavos': summary.entradasCentavos,
-          'saidasCentavos': summary.saidasCentavos,
-          'monthStart': monthStart,
-          'updatedAt': DateTime.now(),
-          'migratedFromPix': true,
-        },
-        SetOptions(merge: true),
-      );
-
-      return summary;
-    });
-  }
-
   Future<PixSummary> _calculateMonthlySummary(DateTime monthStart) async {
     final nextMonth = DateTime(monthStart.year, monthStart.month + 1);
     final snapshot = await _pixCollection
@@ -540,58 +397,7 @@ class PixRepository {
         .where('createdAt', isLessThan: nextMonth)
         .get();
 
-    var entradas = 0;
-    var saidas = 0;
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final value = _intFrom(data['valorCentavos']);
-      final direction = (data['direction'] ?? 'sent').toString();
-      final status = (data['status'] ?? 'concluido').toString();
-
-      if (status == 'cancelado') continue;
-      if (direction == 'received') {
-        entradas += value;
-      } else {
-        saidas += value;
-      }
-    }
-
-    return PixSummary(
-      entradasCentavos: entradas,
-      saidasCentavos: saidas,
-    );
-  }
-
-  Future<int> _ensureDailySummary(DateTime dayStart) async {
-    final summaryRef = _dailySummaryRef(dayStart);
-    final summarySnapshot = await summaryRef.get();
-    final summaryData = summarySnapshot.data();
-    if (summaryData != null) {
-      return _intFrom(summaryData['sentCentavos']);
-    }
-
-    final sentCentavos = await _calculateDailySentCentavos(dayStart);
-    return _firestore!.runTransaction((transaction) async {
-      final transactionSnapshot = await transaction.get(summaryRef);
-      final transactionData = transactionSnapshot.data();
-      if (transactionData != null) {
-        return _intFrom(transactionData['sentCentavos']);
-      }
-
-      transaction.set(
-        summaryRef,
-        {
-          'sentCentavos': sentCentavos,
-          'dayStart': dayStart,
-          'updatedAt': DateTime.now(),
-          'migratedFromPix': true,
-        },
-        SetOptions(merge: true),
-      );
-
-      return sentCentavos;
-    });
+    return _summaryFromDocs(snapshot.docs);
   }
 
   Future<int> _calculateDailySentCentavos(DateTime dayStart) async {
@@ -635,21 +441,36 @@ class PixRepository {
     return key.trim().toLowerCase().replaceAll('/', '_');
   }
 
-  DocumentReference<Map<String, dynamic>> _monthlySummaryRef(DateTime month) {
-    return _monthlySummariesCollection.doc(_periodId(month.year, month.month));
+  static PixSummary _summaryFromSnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return _summaryFromDocs(snapshot.docs);
   }
 
-  DocumentReference<Map<String, dynamic>> _dailySummaryRef(DateTime day) {
-    return _dailySummariesCollection.doc(
-      '${day.year.toString().padLeft(4, '0')}-'
-      '${day.month.toString().padLeft(2, '0')}-'
-      '${day.day.toString().padLeft(2, '0')}',
+  static PixSummary _summaryFromDocs(
+    Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    var entradas = 0;
+    var saidas = 0;
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final value = _intFrom(data['valorCentavos']);
+      final direction = (data['direction'] ?? 'sent').toString();
+      final status = (data['status'] ?? 'concluido').toString();
+
+      if (status == 'cancelado') continue;
+      if (direction == 'received') {
+        entradas += value;
+      } else {
+        saidas += value;
+      }
+    }
+
+    return PixSummary(
+      entradasCentavos: entradas,
+      saidasCentavos: saidas,
     );
-  }
-
-  static String _periodId(int year, int month) {
-    return '${year.toString().padLeft(4, '0')}-'
-        '${month.toString().padLeft(2, '0')}';
   }
 
   static int _balanceFrom(Map<String, dynamic>? data) {
@@ -660,12 +481,6 @@ class PixRepository {
     if (value is int) return value;
     if (value is num) return value.round();
     return fallback;
-  }
-
-  static DateTime _dateFrom(Object? value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return DateTime.now();
   }
 
   static final Map<String, _MonthlySummaryCache> _monthlySummaryCache = {};

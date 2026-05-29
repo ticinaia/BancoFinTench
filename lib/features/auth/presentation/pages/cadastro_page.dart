@@ -329,8 +329,9 @@ class _CadastroPageState extends State<CadastroPage> {
               label: Text(_carregando ? 'Cadastrando...' : 'Cadastrar'),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Já tem conta?',

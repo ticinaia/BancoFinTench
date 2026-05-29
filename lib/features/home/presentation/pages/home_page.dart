@@ -79,8 +79,9 @@ class _HomePageState extends State<HomePage> {
     final autenticado = await _autenticarComBiometria(
       'Confirme sua identidade para visualizar o saldo',
     );
+    if (!mounted) return;
 
-    if (autenticado && mounted) {
+    if (autenticado) {
       setState(() => _saldoVisivel = true);
     }
   }
@@ -200,23 +201,22 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _copiarDadosConta() async {
     final user = _authRepository.currentUser;
+    final accountCode = _accountCodeFromUid(user?.uid);
     final text = '''
 FinTech
 Titular: ${user?.displayName ?? user?.email ?? 'Cliente'}
 Agência: 0001
-Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
+Conta: $accountCode
 ''';
     await Clipboard.setData(ClipboardData(text: text.trim()));
+    if (!mounted) return;
     _mostrarMensagem('Dados da conta copiados para a área de transferência.');
   }
 
   @override
   Widget build(BuildContext context) {
     final user = _authRepository.currentUser;
-    final name = user?.displayName?.trim().isNotEmpty == true
-        ? user!.displayName!.trim()
-        : user?.email?.split('@').first ?? 'cliente';
-    final displayName = '${name[0].toUpperCase()}${name.substring(1)}';
+    final displayName = _displayNameFor(user?.displayName, user?.email);
 
     return Scaffold(
       appBar: AppBar(
@@ -473,6 +473,25 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
     } catch (_) {
       return null;
     }
+  }
+
+  String _displayNameFor(String? rawDisplayName, String? rawEmail) {
+    final displayName = rawDisplayName?.trim();
+    final emailName = rawEmail?.split('@').first.trim();
+    final name = displayName?.isNotEmpty == true
+        ? displayName!
+        : emailName?.isNotEmpty == true
+            ? emailName!
+            : 'cliente';
+
+    return '${name[0].toUpperCase()}${name.substring(1)}';
+  }
+
+  String _accountCodeFromUid(String? uid) {
+    final normalized = uid?.trim();
+    if (normalized == null || normalized.isEmpty) return '00000000';
+    final length = normalized.length < 8 ? normalized.length : 8;
+    return normalized.substring(0, length).toUpperCase().padRight(8, '0');
   }
 }
 

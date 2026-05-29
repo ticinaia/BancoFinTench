@@ -90,9 +90,10 @@ class _PixTransferPageState extends State<PixTransferPage> {
       final confirmado = await showModalBottomSheet<bool>(
         context: context,
         showDragHandle: true,
+        isScrollControlled: true,
         builder: (context) {
           return SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -134,6 +135,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
         },
       );
 
+      if (!mounted) return;
       if (confirmado != true) return;
       await _enviarPix(valorCentavos, recipient);
     } on StateError catch (error) {
@@ -150,6 +152,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
 
     try {
       final autenticado = await _autenticarAcaoSensivel();
+      if (!mounted) return;
       if (!autenticado) {
         _mostrarMensagem('Autenticação cancelada. Nenhum valor foi enviado.');
         return;
@@ -245,6 +248,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     );
 
     pinController.dispose();
+    if (!mounted) return false;
     if (pin == null || pin.isEmpty) return false;
     return _authRepository.validateAppPin(pin);
   }
@@ -267,6 +271,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
 
   Future<void> _lerQrCode() async {
     final result = await Navigator.pushNamed(context, AppRoutes.pixQrScanner);
+    if (!mounted) return;
     if (result is String && result.trim().isNotEmpty) {
       _applyPixPayload(result);
     }
@@ -349,7 +354,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               24,
               8,
@@ -428,6 +433,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     nameController.dispose();
     bankController.dispose();
 
+    if (!mounted) return;
     if (saved == null) return;
 
     try {

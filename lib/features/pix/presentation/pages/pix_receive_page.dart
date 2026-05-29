@@ -36,7 +36,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
     final user = _authRepository.currentUser;
     final email = user?.email?.trim();
     if (email != null && email.isNotEmpty) return email;
-    return '${user?.uid.substring(0, 8) ?? 'cliente'}@bancofintech.com';
+    return '${_accountCodeFromUid(user?.uid)}@bancofintech.com';
   }
 
   int get _valorCentavos {
@@ -69,6 +69,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
 
     final valorCentavos = _valorCentavos;
     final confirmado = await _confirmarRecebimento();
+    if (!mounted) return;
     if (confirmado != true) return;
 
     setState(() => _simulando = true);
@@ -110,9 +111,10 @@ class _PixReceivePageState extends State<PixReceivePage> {
     return showModalBottomSheet<bool>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (context) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -197,6 +199,13 @@ class _PixReceivePageState extends State<PixReceivePage> {
 
   String _onlyDigits(String value) {
     return value.replaceAll(_nonDigitsRegex, '');
+  }
+
+  String _accountCodeFromUid(String? uid) {
+    final normalized = uid?.trim();
+    if (normalized == null || normalized.isEmpty) return 'cliente';
+    final length = normalized.length < 8 ? normalized.length : 8;
+    return normalized.substring(0, length).toLowerCase();
   }
 
   String _buildPixPayload({

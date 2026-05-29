@@ -269,8 +269,9 @@ class _LoginPageState extends State<LoginPage> {
               label: Text(_isLoading ? 'Entrando...' : 'Entrar'),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Ainda não tem conta?',

@@ -133,77 +133,93 @@ class _AuthLockPageState extends State<AuthLockPage> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              Center(
-                child: Container(
-                  width: 92,
-                  height: 92,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: const Icon(
-                    Icons.lock_rounded,
-                    color: Colors.white,
-                    size: 44,
-                  ),
-                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                MediaQuery.viewInsetsOf(context).bottom + 32,
               ),
-              const SizedBox(height: 28),
-              Text(
-                'Conta protegida',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Olá, $userName. Confirme sua identidade para continuar.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 92,
+                        height: 92,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: const Icon(
+                          Icons.lock_rounded,
+                          color: Colors.white,
+                          size: 44,
+                        ),
+                      ),
                     ),
-              ),
-              const Spacer(),
-              TextField(
-                controller: _pinController,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'PIN do app',
-                  prefixIcon: Icon(Icons.password_rounded),
-                  counterText: '',
+                    const SizedBox(height: 28),
+                    Text(
+                      'Conta protegida',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Olá, $userName. Confirme sua identidade para continuar.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+                    const SizedBox(height: 36),
+                    TextField(
+                      controller: _pinController,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'PIN do app',
+                        prefixIcon: Icon(Icons.password_rounded),
+                        counterText: '',
+                      ),
+                      onSubmitted: (_) => _unlockWithPin(),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _checkingPin ? null : _unlockWithPin,
+                      icon: const Icon(Icons.key_rounded),
+                      label: Text(
+                        _checkingPin ? 'Conferindo...' : 'Entrar com PIN',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _unlocking ? null : _unlock,
+                      icon: _unlocking
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.fingerprint_rounded),
+                      label: Text(
+                        _unlocking ? 'Desbloqueando...' : 'Desbloquear',
+                      ),
+                    ),
+                  ],
                 ),
-                onSubmitted: (_) => _unlockWithPin(),
               ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _checkingPin ? null : _unlockWithPin,
-                icon: const Icon(Icons.key_rounded),
-                label: Text(_checkingPin ? 'Conferindo...' : 'Entrar com PIN'),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _unlocking ? null : _unlock,
-                icon: _unlocking
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.fingerprint_rounded),
-                label: Text(_unlocking ? 'Desbloqueando...' : 'Desbloquear'),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

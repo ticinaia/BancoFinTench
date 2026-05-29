@@ -64,6 +64,7 @@ class _SecurityPageState extends State<SecurityPage> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     if (!await _confirmPin()) return;
+    if (!mounted) return;
 
     setState(() => _savingProfile = true);
 
@@ -109,57 +110,59 @@ class _SecurityPageState extends State<SecurityPage> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Trocar PIN'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: currentController,
-                  obscureText: true,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'PIN atual',
-                    counterText: '',
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: currentController,
+                    obscureText: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'PIN atual',
+                      counterText: '',
+                    ),
+                    validator: _pinValidator,
                   ),
-                  validator: _pinValidator,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: newController,
-                  obscureText: true,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'Novo PIN',
-                    counterText: '',
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: newController,
+                    obscureText: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Novo PIN',
+                      counterText: '',
+                    ),
+                    validator: _pinValidator,
                   ),
-                  validator: _pinValidator,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: confirmController,
-                  obscureText: true,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'Confirmar novo PIN',
-                    counterText: '',
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: confirmController,
+                    obscureText: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Confirmar novo PIN',
+                      counterText: '',
+                    ),
+                    validator: (value) {
+                      final error = _pinValidator(value);
+                      if (error != null) return error;
+                      if (value != newController.text) {
+                        return 'Os PINs não coincidem';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    final error = _pinValidator(value);
-                    if (error != null) return error;
-                    if (value != newController.text) {
-                      return 'Os PINs não coincidem';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -190,6 +193,7 @@ class _SecurityPageState extends State<SecurityPage> {
     confirmController.dispose();
 
     if (payload == null) return;
+    if (!mounted) return;
 
     setState(() => _changingPin = true);
     try {
@@ -226,6 +230,7 @@ class _SecurityPageState extends State<SecurityPage> {
       return;
     }
     if (!await _confirmPin()) return;
+    if (!mounted) return;
 
     setState(() => _sendingEmail = true);
 
@@ -269,6 +274,7 @@ class _SecurityPageState extends State<SecurityPage> {
 
     if (confirmed != true) return;
     if (!await _confirmPin()) return;
+    if (!mounted) return;
 
     setState(() => _deleting = true);
 
@@ -343,9 +349,11 @@ class _SecurityPageState extends State<SecurityPage> {
     );
 
     pinController.dispose();
+    if (!mounted) return false;
     if (pin == null || pin.isEmpty) return false;
 
     final valid = await _authRepository.validateAppPin(pin);
+    if (!mounted) return false;
     if (!valid && mounted) _showMessage('PIN incorreto.');
     return valid;
   }
