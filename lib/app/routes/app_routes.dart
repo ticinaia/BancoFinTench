@@ -13,4 +13,6 @@ class AppRoutes {
   static const String cotacao = '/cotacao';
   static const String pixTransfer = '/pix-transfer';
   static const String pixHistory = '/pix-history';
+  static const String pixReceipt = '/pix-receipt';
+  static const String pixQrScanner = '/pix-qr-scanner';
 }

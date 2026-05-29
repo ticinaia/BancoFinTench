@@ -16,7 +16,12 @@ service cloud.firestore {
 
       match /pix/{pixId} {
         allow read, create: if isOwner(userId);
-        allow update, delete: if false;
+        allow update: if isOwner(userId)
+          && resource.data.status == 'pendente'
+          && request.resource.data.status == 'cancelado'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'cancelledAt']);
+        allow delete: if false;
       }
 
       match /accessLogs/{logId} {

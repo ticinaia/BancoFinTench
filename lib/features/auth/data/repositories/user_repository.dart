@@ -47,12 +47,15 @@ class UserRepository {
     required String cpf,
     required String phone,
   }) async {
-    await _users.doc(id).update({
-      'name': name,
-      'cpf': cpf,
-      'phone': phone,
-      'updatedAt': DateTime.now(),
-    });
+    await _users.doc(id).set(
+      {
+        'name': name,
+        'cpf': cpf,
+        'phone': phone,
+        'updatedAt': DateTime.now(),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   Future<void> registerAccessLog({

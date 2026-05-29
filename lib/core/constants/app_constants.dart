@@ -10,6 +10,10 @@ class AppConstants {
 
   static const String awesomeApiBaseUrl = 'https://economia.awesomeapi.com.br';
 
+  // Conta
+  static const int initialBalanceCentavos = 245000;
+  static const int pixDailyLimitCentavos = 500000;
+
   // Timeouts de rede
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);

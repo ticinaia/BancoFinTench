@@ -1,13 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/app_plugins.dart';
+import '../../../../core/utils/br_formatters.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
+import '../../../pix/data/repositories/pix_repository.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,31 +21,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _authRepository = AuthRepository();
+  final _pixRepository = PixRepository();
   bool _autenticacaoLocalDisponivel = false;
   bool _biometriaDisponivel = false;
   bool _saldoVisivel = false;
   Uint8List? _imagemPerfilBytes;
-
-  final List<Map<String, dynamic>> _ultimasTransferencias = [
-    {
-      'nome': 'Maria Silva',
-      'valor': 580.00,
-      'tipo': 'recebido',
-      'data': 'Hoje, 14:22',
-    },
-    {
-      'nome': 'João Pedro',
-      'valor': 150.00,
-      'tipo': 'enviado',
-      'data': 'Ontem, 18:40',
-    },
-    {
-      'nome': 'Netflix',
-      'valor': 39.90,
-      'tipo': 'enviado',
-      'data': 'Ontem, 09:10',
-    },
-  ];
 
   @override
   void initState() {
@@ -201,6 +184,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _copiarDadosConta() async {
+    final user = _authRepository.currentUser;
+    final text = '''
+BancoFinTech
+Titular: ${user?.displayName ?? user?.email ?? 'Cliente'}
+Agência: 0001
+Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
+''';
+    await Clipboard.setData(ClipboardData(text: text.trim()));
+    _mostrarMensagem('Dados da conta copiados.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _authRepository.currentUser;
@@ -224,211 +219,190 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: _abrirSeletorImagem,
-                  child: CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppColors.primary,
-                    backgroundImage: _imagemPerfilBytes != null
-                        ? MemoryImage(_imagemPerfilBytes!)
-                        : null,
-                    child: _imagemPerfilBytes == null
-                        ? const Icon(
-                            Icons.person_rounded,
-                            color: Colors.white,
-                            size: 32,
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Olá, $displayName',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      Text(
-                        'Toque na foto para personalizar',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _BalanceCard(
-              saldoVisivel: _saldoVisivel,
-              biometriaDisponivel: _biometriaDisponivel,
-              autenticacaoLocalDisponivel: _autenticacaoLocalDisponivel,
-              onToggleSaldo: _mostrarSaldoComBiometria,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Ações rápidas',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 3,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.92,
-              children: [
-                _ActionTile(
-                  icon: Icons.currency_exchange_rounded,
-                  label: 'Cotação',
-                  color: AppColors.accent,
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.cotacao,
-                  ),
-                ),
-                _ActionTile(
-                  icon: Icons.pix_rounded,
-                  label: 'Transferência',
-                  color: AppColors.secondary,
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.pixTransfer,
-                  ),
-                ),
-                _ActionTile(
-                  icon: Icons.receipt_long_rounded,
-                  label: 'Histórico',
-                  color: AppColors.info,
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.pixHistory,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Últimas transferências',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.outline),
-              ),
-              child: Column(
-                children: _ultimasTransferencias.map(
-                  (transferencia) {
-                    final recebido = transferencia['tipo'] == 'recebido';
-                    final isLast = transferencia == _ultimasTransferencias.last;
+        child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: _pixRepository.watchAccount(),
+          builder: (context, accountSnapshot) {
+            final accountData = accountSnapshot.data?.data();
+            final saldoCentavos = _intFrom(
+              accountData?['balanceCentavos'],
+              fallback: PixRepository.initialBalanceCentavos,
+            );
 
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color:
-                                isLast ? Colors.transparent : AppColors.outline,
-                          ),
-                        ),
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _abrirSeletorImagem,
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundColor: AppColors.primary,
+                        backgroundImage: _imagemPerfilBytes != null
+                            ? MemoryImage(_imagemPerfilBytes!)
+                            : null,
+                        child: _imagemPerfilBytes == null
+                            ? const Icon(
+                                Icons.person_rounded,
+                                color: Colors.white,
+                                size: 32,
+                              )
+                            : null,
                       ),
-                      child: Row(
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: recebido
-                                  ? AppColors.secondary.withValues(alpha: 0.12)
-                                  : AppColors.error.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(
-                              recebido
-                                  ? Icons.south_west_rounded
-                                  : Icons.north_east_rounded,
-                              color: recebido
-                                  ? AppColors.secondaryDark
-                                  : AppColors.error,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  transferencia['nome'],
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                          Text(
+                            'Olá, $displayName',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  transferencia['data'],
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                ),
-                              ],
-                            ),
                           ),
                           Text(
-                            '${recebido ? '+' : '-'} ${NumberFormat.currency(
-                              locale: 'pt_BR',
-                              symbol: 'R\$',
-                            ).format(transferencia['valor'])}',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: recebido
-                                  ? AppColors.secondaryDark
-                                  : AppColors.error,
-                            ),
+                            'Toque na foto para personalizar',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _BalanceCard(
+                  saldoVisivel: _saldoVisivel,
+                  saldoCentavos: saldoCentavos,
+                  biometriaDisponivel: _biometriaDisponivel,
+                  autenticacaoLocalDisponivel: _autenticacaoLocalDisponivel,
+                  onToggleSaldo: _mostrarSaldoComBiometria,
+                ),
+                const SizedBox(height: 24),
+                FutureBuilder<PixSummary>(
+                  future: _pixRepository.getMonthlySummary(),
+                  builder: (context, snapshot) {
+                    final summary = snapshot.data ??
+                        const PixSummary(
+                          entradasCentavos: 0,
+                          saidasCentavos: 0,
+                        );
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryCard(
+                            label: 'Entradas',
+                            value: BrFormatters.currencyFromCentavos(
+                              summary.entradasCentavos,
+                            ),
+                            color: AppColors.success,
+                            icon: Icons.south_west_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SummaryCard(
+                            label: 'Saídas',
+                            value: BrFormatters.currencyFromCentavos(
+                              summary.saidasCentavos,
+                            ),
+                            color: AppColors.error,
+                            icon: Icons.north_east_rounded,
+                          ),
+                        ),
+                      ],
                     );
                   },
-                ).toList(),
-              ),
-            ),
-          ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Ações rápidas',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.92,
+                  children: [
+                    _ActionTile(
+                      icon: Icons.currency_exchange_rounded,
+                      label: 'Cotação',
+                      color: AppColors.accent,
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.cotacao,
+                      ),
+                    ),
+                    _ActionTile(
+                      icon: Icons.pix_rounded,
+                      label: 'Transferência',
+                      color: AppColors.secondary,
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.pixTransfer,
+                      ),
+                    ),
+                    _ActionTile(
+                      icon: Icons.receipt_long_rounded,
+                      label: 'Histórico',
+                      color: AppColors.info,
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.pixHistory,
+                      ),
+                    ),
+                    _ActionTile(
+                      icon: Icons.copy_rounded,
+                      label: 'Dados da conta',
+                      color: AppColors.primaryLight,
+                      onTap: _copiarDadosConta,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Últimas transferências',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                _RecentPixList(repository: _pixRepository),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  int _intFrom(Object? value, {required int fallback}) {
+    if (value is int) return value;
+    if (value is num) return value.round();
+    return fallback;
   }
 }
 
 class _BalanceCard extends StatelessWidget {
   const _BalanceCard({
     required this.saldoVisivel,
+    required this.saldoCentavos,
     required this.biometriaDisponivel,
     required this.autenticacaoLocalDisponivel,
     required this.onToggleSaldo,
   });
 
   final bool saldoVisivel;
+  final int saldoCentavos;
   final bool biometriaDisponivel;
   final bool autenticacaoLocalDisponivel;
   final VoidCallback onToggleSaldo;
@@ -474,7 +448,9 @@ class _BalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            saldoVisivel ? 'R\$ 2.450,00' : 'R\$ • • • • •',
+            saldoVisivel
+                ? BrFormatters.currencyFromCentavos(saldoCentavos)
+                : 'R\$ • • • • •',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -575,5 +551,169 @@ class _ActionTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentPixList extends StatelessWidget {
+  const _RecentPixList({required this.repository});
+
+  final PixRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: repository.watchRecentPix(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.outline),
+            ),
+            child: Text(
+              'Nenhum PIX por enquanto.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
+          );
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.outline),
+          ),
+          child: Column(
+            children: docs.map((doc) {
+              final data = doc.data();
+              final isLast = doc == docs.last;
+              final value = data['valorCentavos'];
+              final centavos = value is int
+                  ? value
+                  : value is num
+                      ? value.round()
+                      : 0;
+              final direction = (data['direction'] ?? 'sent').toString();
+              final recebido = direction == 'received';
+              final name =
+                  (data['recipientName'] ?? data['chave'] ?? 'PIX').toString();
+              final date = _formatDate(data['data'] ?? data['createdAt']);
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isLast ? Colors.transparent : AppColors.outline,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      recebido
+                          ? Icons.south_west_rounded
+                          : Icons.north_east_rounded,
+                      color: recebido ? AppColors.success : AppColors.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          Text(
+                            date,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${recebido ? '+' : '-'} ${BrFormatters.currencyFromCentavos(centavos)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: recebido ? AppColors.success : AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatDate(Object? value) {
+    DateTime? date;
+    if (value is Timestamp) date = value.toDate();
+    if (value is DateTime) date = value;
+    if (date == null) return 'Data pendente';
+    return BrFormatters.dateTime(date);
   }
 }

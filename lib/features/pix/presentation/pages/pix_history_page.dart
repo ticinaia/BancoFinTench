@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../data/repositories/pix_repository.dart';
@@ -9,14 +10,41 @@ import '../../data/repositories/pix_repository.dart';
 class PixHistoryPage extends StatelessWidget {
   const PixHistoryPage({super.key});
 
+  Future<void> _cancelarPixPendente({
+    required BuildContext context,
+    required PixRepository pixRepository,
+    required String id,
+  }) async {
+    try {
+      await pixRepository.cancelPendingPix(id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PIX pendente cancelado.')),
+      );
+    } on StateError catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível cancelar o PIX.')),
+      );
+    }
+  }
+
   void _compartilharComprovante({
     required String chave,
     required String valor,
     required String data,
     required String codigo,
+    required String destinatario,
+    required String banco,
+    required String status,
   }) {
     Share.share(
-      'Comprovante PIX\n\nValor: $valor\nChave: $chave\nData: $data\nCódigo: $codigo',
+      'Comprovante PIX\n\nValor: $valor\nDestinatário: $destinatario\nBanco: $banco\nChave: $chave\nData: $data\nStatus: $status\nCódigo: $codigo',
     );
   }
 
@@ -67,6 +95,11 @@ class PixHistoryPage extends StatelessWidget {
               final dataFormatada =
                   _formatDate(data['data'] ?? data['createdAt']);
               final status = (data['status'] ?? 'concluido').toString();
+              final destinatario =
+                  (data['recipientName'] ?? 'Destinatário não informado')
+                      .toString();
+              final banco =
+                  (data['recipientBank'] ?? 'Banco não informado').toString();
 
               return Container(
                 decoration: BoxDecoration(
@@ -75,6 +108,24 @@ class PixHistoryPage extends StatelessWidget {
                   border: Border.all(color: AppColors.outline),
                 ),
                 child: ListTile(
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.pixReceipt,
+                      arguments: PixReceipt(
+                        id: doc.id,
+                        chave: chave,
+                        tipoChave: (data['tipoChave'] ?? 'PIX').toString(),
+                        recipientName: destinatario,
+                        recipientBank: banco,
+                        recipientDocument:
+                            (data['recipientDocument'] ?? '').toString(),
+                        valorCentavos: _centavosFrom(data),
+                        status: status,
+                        createdAt: _dateFrom(data['data'] ?? data['createdAt']),
+                      ),
+                    );
+                  },
                   contentPadding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
                   leading: Container(
                     width: 46,
@@ -109,14 +160,31 @@ class PixHistoryPage extends StatelessWidget {
                     ),
                   ),
                   trailing: IconButton(
-                    icon: const Icon(Icons.ios_share_rounded),
-                    tooltip: 'Compartilhar comprovante',
+                    icon: Icon(
+                      status == 'pendente'
+                          ? Icons.cancel_outlined
+                          : Icons.ios_share_rounded,
+                    ),
+                    tooltip: status == 'pendente'
+                        ? 'Cancelar PIX'
+                        : 'Compartilhar comprovante',
                     onPressed: () {
+                      if (status == 'pendente') {
+                        _cancelarPixPendente(
+                          context: context,
+                          pixRepository: pixRepository,
+                          id: doc.id,
+                        );
+                        return;
+                      }
                       _compartilharComprovante(
                         chave: chave,
                         valor: valor,
                         data: dataFormatada,
                         codigo: doc.id,
+                        destinatario: destinatario,
+                        banco: banco,
+                        status: _statusLabel(status),
                       );
                     },
                   ),
@@ -130,15 +198,17 @@ class PixHistoryPage extends StatelessWidget {
   }
 
   static String _formatValor(Map<String, dynamic> data) {
+    return BrFormatters.currencyFromCentavos(_centavosFrom(data));
+  }
+
+  static int _centavosFrom(Map<String, dynamic> data) {
     final centavos = data['valorCentavos'];
-    if (centavos is int) return BrFormatters.currencyFromCentavos(centavos);
-    if (centavos is num) {
-      return BrFormatters.currencyFromCentavos(centavos.round());
-    }
+    if (centavos is int) return centavos;
+    if (centavos is num) return centavos.round();
 
     final valorAntigo = data['valor'];
-    if (valorAntigo != null) return 'R\$ $valorAntigo';
-    return 'R\$ 0,00';
+    if (valorAntigo is num) return (valorAntigo * 100).round();
+    return 0;
   }
 
   static String _formatDate(Object? value) {
@@ -150,6 +220,12 @@ class PixHistoryPage extends StatelessWidget {
     return BrFormatters.dateTime(date);
   }
 
+  static DateTime _dateFrom(Object? value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return DateTime.now();
+  }
+
   static String _statusLabel(String status) {
     switch (status) {
       case 'concluido':
@@ -158,6 +234,8 @@ class PixHistoryPage extends StatelessWidget {
         return 'Pendente';
       case 'falhou':
         return 'Falhou';
+      case 'cancelado':
+        return 'Cancelado';
       default:
         return status;
     }

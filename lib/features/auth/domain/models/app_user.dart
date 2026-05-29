@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/constants/app_constants.dart';
+
 class AppUser {
   const AppUser({
     required this.id,
@@ -8,6 +10,7 @@ class AppUser {
     this.cpf,
     this.phone,
     this.termsAcceptedAt,
+    this.balanceCentavos = AppConstants.initialBalanceCentavos,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -18,6 +21,7 @@ class AppUser {
   final String? cpf;
   final String? phone;
   final DateTime? termsAcceptedAt;
+  final int balanceCentavos;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -28,6 +32,7 @@ class AppUser {
       'cpf': cpf,
       'phone': phone,
       'termsAcceptedAt': termsAcceptedAt,
+      'balanceCentavos': balanceCentavos,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -41,6 +46,10 @@ class AppUser {
       cpf: map['cpf'] as String?,
       phone: map['phone'] as String?,
       termsAcceptedAt: _optionalDateFrom(map['termsAcceptedAt']),
+      balanceCentavos: _intFrom(
+        map['balanceCentavos'],
+        fallback: AppConstants.initialBalanceCentavos,
+      ),
       createdAt: _dateFrom(map['createdAt']),
       updatedAt: _dateFrom(map['updatedAt']),
     );
@@ -55,5 +64,11 @@ class AppUser {
   static DateTime? _optionalDateFrom(Object? value) {
     if (value == null) return null;
     return _dateFrom(value);
+  }
+
+  static int _intFrom(Object? value, {required int fallback}) {
+    if (value is int) return value;
+    if (value is num) return value.round();
+    return fallback;
   }
 }

@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/app_plugins.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../data/repositories/pix_repository.dart';
+import '../../domain/validators/pix_key_validator.dart';
 
 class PixTransferPage extends StatefulWidget {
   const PixTransferPage({super.key});
@@ -25,6 +27,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
 
   String _tipoChave = 'E-mail';
   bool _enviando = false;
+  PixRecipient? _recipient;
 
   @override
   void dispose() {
@@ -39,52 +42,81 @@ class _PixTransferPageState extends State<PixTransferPage> {
     final valorCentavos = BrFormatters.parseCurrencyToCentavos(
       _valorController.text,
     );
-    final confirmado = await showModalBottomSheet<bool>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Confirmar PIX',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                _ResumoLinha(
-                  label: 'Valor',
-                  value: BrFormatters.currencyFromCentavos(valorCentavos),
-                ),
-                _ResumoLinha(label: 'Tipo de chave', value: _tipoChave),
-                _ResumoLinha(
-                    label: 'Chave', value: _chaveController.text.trim()),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context, true),
-                  icon: const Icon(Icons.fingerprint),
-                  label: const Text('Enviar PIX'),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancelar'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
 
-    if (confirmado != true) return;
-    await _enviarPix(valorCentavos);
+    try {
+      final saldo = await _pixRepository.getBalanceCentavos();
+      if (valorCentavos > saldo) {
+        _mostrarMensagem('Saldo insuficiente para enviar este PIX.');
+        return;
+      }
+
+      final recipient = await _pixRepository.resolveRecipient(
+        keyType: _tipoChave,
+        key: _chaveController.text.trim(),
+      );
+
+      if (!mounted) return;
+      setState(() => _recipient = recipient);
+
+      final confirmado = await showModalBottomSheet<bool>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Confirmar PIX',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  _ResumoLinha(
+                    label: 'Valor',
+                    value: BrFormatters.currencyFromCentavos(valorCentavos),
+                  ),
+                  _ResumoLinha(label: 'Destinatário', value: recipient.name),
+                  _ResumoLinha(label: 'Banco', value: recipient.bank),
+                  _ResumoLinha(label: 'Tipo de chave', value: _tipoChave),
+                  _ResumoLinha(
+                      label: 'Chave', value: _chaveController.text.trim()),
+                  _ResumoLinha(
+                    label: 'Data',
+                    value: BrFormatters.dateTime(DateTime.now()),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context, true),
+                    icon: const Icon(Icons.fingerprint),
+                    label: const Text('Enviar PIX'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      if (confirmado != true) return;
+      await _enviarPix(valorCentavos, recipient);
+    } on StateError catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(error.message);
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível confirmar os dados do PIX.');
+    }
   }
 
-  Future<void> _enviarPix(int valorCentavos) async {
+  Future<void> _enviarPix(int valorCentavos, PixRecipient recipient) async {
     setState(() => _enviando = true);
 
     try {
@@ -94,14 +126,20 @@ class _PixTransferPageState extends State<PixTransferPage> {
         return;
       }
 
-      await _pixRepository.enviarPix(
+      final receipt = await _pixRepository.enviarPix(
         chave: _chaveController.text.trim(),
+        tipoChave: _tipoChave,
         valorCentavos: valorCentavos,
+        recipient: recipient,
       );
 
       if (!mounted) return;
       _mostrarMensagem('PIX enviado com sucesso.');
-      Navigator.pop(context);
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.pixReceipt,
+        arguments: receipt,
+      );
     } on StateError catch (error) {
       if (!mounted) return;
       _mostrarMensagem(error.message);
@@ -188,6 +226,115 @@ class _PixTransferPageState extends State<PixTransferPage> {
     );
   }
 
+  Future<void> _colarCodigoPix() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text == null || text.isEmpty) {
+      _mostrarMensagem(
+          'Nenhum código PIX encontrado na área de transferência.');
+      return;
+    }
+    _applyPixPayload(text);
+  }
+
+  Future<void> _lerQrCode() async {
+    final result = await Navigator.pushNamed(context, AppRoutes.pixQrScanner);
+    if (result is String && result.trim().isNotEmpty) {
+      _applyPixPayload(result);
+    }
+  }
+
+  void _applyPixPayload(String payload) {
+    final parsed = _parsePixPayload(payload);
+    setState(() {
+      _tipoChave = parsed.keyType;
+      _chaveController.text = parsed.key;
+      if (parsed.valorCentavos != null) {
+        _valorController.text = BrFormatters.currencyFromCentavos(
+          parsed.valorCentavos!,
+        ).replaceAll('R\$ ', '');
+      }
+    });
+    _mostrarMensagem('Dados PIX preenchidos.');
+  }
+
+  _ParsedPixPayload _parsePixPayload(String payload) {
+    final text = payload.trim();
+    final emvPayload = _parseEmvPixPayload(text);
+    if (emvPayload != null) return emvPayload;
+
+    final uri = Uri.tryParse(text);
+    final key = uri?.queryParameters['pixKey'] ??
+        uri?.queryParameters['chave'] ??
+        uri?.queryParameters['key'];
+    final amount = uri?.queryParameters['amount'] ??
+        uri?.queryParameters['valor'] ??
+        uri?.queryParameters['value'];
+
+    if (key != null && key.isNotEmpty) {
+      return _ParsedPixPayload(
+        key: key,
+        keyType: _detectKeyType(key),
+        valorCentavos: amount == null
+            ? null
+            : BrFormatters.parseCurrencyToCentavos(amount),
+      );
+    }
+
+    return _ParsedPixPayload(
+      key: text,
+      keyType: _detectKeyType(text),
+    );
+  }
+
+  _ParsedPixPayload? _parseEmvPixPayload(String payload) {
+    if (!payload.startsWith('000201')) return null;
+
+    final root = _parseTlv(payload);
+    final merchantAccount = root['26'];
+    final key =
+        merchantAccount == null ? null : _parseTlv(merchantAccount)['01'];
+    final amount = root['54'];
+
+    if (key == null || key.isEmpty) return null;
+
+    return _ParsedPixPayload(
+      key: key,
+      keyType: _detectKeyType(key),
+      valorCentavos:
+          amount == null ? null : BrFormatters.parseCurrencyToCentavos(amount),
+    );
+  }
+
+  Map<String, String> _parseTlv(String payload) {
+    final result = <String, String>{};
+    var index = 0;
+
+    while (index + 4 <= payload.length) {
+      final id = payload.substring(index, index + 2);
+      final length = int.tryParse(payload.substring(index + 2, index + 4));
+      if (length == null) break;
+
+      final valueStart = index + 4;
+      final valueEnd = valueStart + length;
+      if (valueEnd > payload.length) break;
+
+      result[id] = payload.substring(valueStart, valueEnd);
+      index = valueEnd;
+    }
+
+    return result;
+  }
+
+  String _detectKeyType(String key) {
+    if (PixKeyValidator.isValid(type: 'E-mail', value: key)) return 'E-mail';
+    if (PixKeyValidator.isValid(type: 'CPF', value: key)) return 'CPF';
+    if (PixKeyValidator.isValid(type: 'Telefone', value: key)) {
+      return 'Telefone';
+    }
+    return 'Aleatória';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -255,12 +402,18 @@ class _PixTransferPageState extends State<PixTransferPage> {
                   prefixIcon: Icon(Icons.key_rounded),
                 ),
                 onChanged: (value) {
-                  if (value != null) setState(() => _tipoChave = value);
+                  if (value != null) {
+                    setState(() {
+                      _tipoChave = value;
+                      _recipient = null;
+                    });
+                  }
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _chaveController,
+                onChanged: (_) => setState(() => _recipient = null),
                 decoration: const InputDecoration(
                   labelText: 'Chave PIX',
                   prefixIcon: Icon(Icons.alternate_email_rounded),
@@ -268,16 +421,19 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 validator: (value) {
                   final text = value?.trim() ?? '';
                   if (text.isEmpty) return 'Informe a chave PIX';
-                  if (_tipoChave == 'E-mail' && !text.contains('@')) {
-                    return 'Informe um e-mail válido';
-                  }
-                  if (_tipoChave == 'CPF' &&
-                      text.replaceAll(RegExp(r'[^0-9]'), '').length != 11) {
-                    return 'Informe um CPF com 11 dígitos';
+                  if (!PixKeyValidator.isValid(
+                    type: _tipoChave,
+                    value: text,
+                  )) {
+                    return PixKeyValidator.messageFor(_tipoChave);
                   }
                   return null;
                 },
               ),
+              if (_recipient != null) ...[
+                const SizedBox(height: 12),
+                _RecipientPreview(recipient: _recipient!),
+              ],
               const SizedBox(height: 16),
               TextFormField(
                 controller: _valorController,
@@ -302,11 +458,15 @@ class _PixTransferPageState extends State<PixTransferPage> {
               ),
               const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: () {
-                  _mostrarMensagem('Leitura de QR Code ainda não configurada.');
-                },
+                onPressed: _lerQrCode,
                 icon: const Icon(Icons.qr_code_scanner_rounded),
                 label: const Text('Ler QR Code'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _colarCodigoPix,
+                icon: const Icon(Icons.content_paste_rounded),
+                label: const Text('Colar código PIX'),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -366,4 +526,59 @@ class _ResumoLinha extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RecipientPreview extends StatelessWidget {
+  const _RecipientPreview({required this.recipient});
+
+  final PixRecipient recipient;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.verified_user_outlined, color: AppColors.secondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  recipient.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                Text(
+                  recipient.bank,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParsedPixPayload {
+  const _ParsedPixPayload({
+    required this.key,
+    required this.keyType,
+    this.valorCentavos,
+  });
+
+  final String key;
+  final String keyType;
+  final int? valorCentavos;
 }
