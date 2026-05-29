@@ -19,11 +19,20 @@ class PixStatementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBorderColor =
+        isDark ? AppColors.darkSurfaceVariant : AppColors.outline;
+    final amountColor = item.status == 'cancelado'
+        ? colorScheme.onSurface.withValues(alpha: 0.72)
+        : item.amountColor;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: cardBorderColor),
       ),
       child: ListTile(
         onTap: item.canOpenReceipt ? onOpenReceipt : null,
@@ -39,10 +48,10 @@ class PixStatementTile extends StatelessWidget {
         ),
         title: Text(
           item.signedAmount,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: item.amountColor,
-              ),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: amountColor,
+          ),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),

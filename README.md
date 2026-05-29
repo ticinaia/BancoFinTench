@@ -1,4 +1,17 @@
 # FinTech - Banco Digital em Flutter
+Universidade da Amazonia (UNAMA)
+Professor Mauricio Aldenor - Desenvolvimento Mobile
+A
+Alunos: Leticia Monteiro Alves da SIlva - 04186058 - Divisao de Tarefas, Configuraç~ao de Ambiente e Banco de Dados, Centralizaç~ao de Plugins, Historico de Trasnferencias, comprovante e implementaçao de Qr Code, Melhorias e refinamento logico
+Bruno Henrique Brasil da Silva - 04185495 - Desenvolveu a Home com saldo e ultimas transferencias e aplicou o plugin de Image_Picker
+Daniel Viana de Farias - 04178809 - Desenvolveu a p'agina de Cotaçao com o uso de Api, tratou os erros de conexao e implementou segurança.
+Felipe Mota Damasceno - 04183762 - Desenvolveu as telas de login e cadastro com Firebase Auth, logout, e implementou a biometria
+Camila Gonçalves Bomfim - 04185677 - Desenvolveu as telas de Pix
+
+
+
+
+
 
 ## 1. Apresentação do projeto
 
