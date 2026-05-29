@@ -1,15 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:banco_fin_tech/features/auth/domain/models/cotacao.dart';
-import 'package:banco_fin_tech/core/constants/app_constants.dart';
+import 'package:banco_fin_tech/core/services/app_plugins.dart';
 
 class CotacaoRepository {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: AppConstants.awesomeApiBaseUrl,
-      connectTimeout: AppConstants.connectTimeout,
-      receiveTimeout: AppConstants.receiveTimeout,
-    ),
-  );
+  CotacaoRepository({Dio? dio}) : _dio = dio ?? AppPlugins.dio;
+
+  final Dio _dio;
 
   Future<List<Cotacao>> getCotacoes() async {
     try {
