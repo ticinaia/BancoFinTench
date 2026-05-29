@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../data/repositories/pix_repository.dart';
@@ -104,9 +105,8 @@ class _PixReceivePageState extends State<PixReceivePage> {
     required String merchantName,
     required int amountCentavos,
   }) {
-    final amount = amountCentavos <= 0
-        ? null
-        : (amountCentavos / 100).toStringAsFixed(2);
+    final amount =
+        amountCentavos <= 0 ? null : (amountCentavos / 100).toStringAsFixed(2);
     final merchantAccount = _tlv('00', 'br.gov.bcb.pix') + _tlv('01', key);
     final payload = StringBuffer()
       ..write(_tlv('00', '01'))
@@ -164,6 +164,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
       appBar: AppBar(
         title: const Text('Receber PIX'),
       ),
+      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
       body: SafeArea(
         child: Form(
           key: _formKey,

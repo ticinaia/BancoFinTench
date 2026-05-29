@@ -28,6 +28,16 @@ service cloud.firestore {
         allow read, create: if isOwner(userId);
         allow update, delete: if false;
       }
+
+      match /pix_favorites/{favoriteId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
   }
 }

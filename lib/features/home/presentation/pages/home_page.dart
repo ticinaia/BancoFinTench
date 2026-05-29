@@ -9,6 +9,7 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/services/app_plugins.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -206,7 +207,9 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
   @override
   Widget build(BuildContext context) {
     final user = _authRepository.currentUser;
-    final name = user?.email?.split('@').first ?? 'cliente';
+    final name = user?.displayName?.trim().isNotEmpty == true
+        ? user!.displayName!.trim()
+        : user?.email?.split('@').first ?? 'cliente';
     final displayName = '${name[0].toUpperCase()}${name.substring(1)}';
 
     return Scaffold(
@@ -225,6 +228,7 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
           ),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 0),
       body: SafeArea(
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: _pixRepository.watchAccount(),
@@ -386,6 +390,15 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
                       color: AppColors.primaryLight,
                       onTap: _copiarDadosConta,
                     ),
+                    _ActionTile(
+                      icon: Icons.shield_outlined,
+                      label: 'Segurança',
+                      color: AppColors.warning,
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.security,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -474,18 +487,25 @@ class _BalanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            saldoVisivel
-                ? BrFormatters.currencyFromCentavos(saldoCentavos)
-                : 'R\$ • • • • •',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+          InkWell(
+            onTap: onToggleSaldo,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                saldoVisivel
+                    ? BrFormatters.currencyFromCentavos(saldoCentavos)
+                    : 'R\$ • • • • •',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Conta corrente',
+            saldoVisivel ? 'Conta corrente' : 'Toque no saldo para visualizar',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.white.withValues(alpha: 0.66),
                 ),

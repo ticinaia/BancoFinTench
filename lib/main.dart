@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'app/routes/routes.dart';
 import 'app/routes/app_routes.dart';
 import 'app/theme/app_theme.dart';
+import 'app/theme/app_theme_controller.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/app_plugins.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
@@ -32,6 +33,7 @@ Future<void> main() async {
   );
 
   await AppPlugins.initialize();
+  await AppThemeController.initialize();
 
   runApp(const BancoFinTechApp());
 }
@@ -41,33 +43,29 @@ class BancoFinTechApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      navigatorKey: _appNavigatorKey,
-      navigatorObservers: [_appRouteObserver],
-
-      // Tema
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
-
-      // Rota inicial
-      initialRoute: AppRoutes.splash,
-
-      // Gerador de rotas nomeadas
-      onGenerateRoute: AppRouter.onGenerateRoute,
-
-      builder: (context, child) {
-        return _SessionTimeoutGuard(
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppThemeController.mode,
+      builder: (context, themeMode, _) {
+        return MaterialApp(
+          title: AppConstants.appName,
+          debugShowCheckedModeBanner: false,
           navigatorKey: _appNavigatorKey,
-          routeObserver: _appRouteObserver,
-          child: child ?? const SizedBox.shrink(),
+          navigatorObservers: [_appRouteObserver],
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          initialRoute: AppRoutes.splash,
+          onGenerateRoute: AppRouter.onGenerateRoute,
+          builder: (context, child) {
+            return _SessionTimeoutGuard(
+              navigatorKey: _appNavigatorKey,
+              routeObserver: _appRouteObserver,
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+          locale: const Locale('pt', 'BR'),
         );
       },
-
-      // Locale
-      locale: const Locale('pt', 'BR'),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/firebase_service.dart';
+import '../../../../core/utils/br_formatters.dart';
 
 class PixRepository {
   PixRepository({
@@ -36,6 +37,14 @@ class PixRepository {
     return _userDoc.collection('pix');
   }
 
+  CollectionReference<Map<String, dynamic>> get _favoritesCollection {
+    return _userDoc.collection('pix_favorites');
+  }
+
+  CollectionReference<Map<String, dynamic>> get _notificationsCollection {
+    return _userDoc.collection('notifications');
+  }
+
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchAccount() {
     try {
       return _userDoc.snapshots();
@@ -61,6 +70,39 @@ class PixRepository {
     } catch (error) {
       return Stream<QuerySnapshot<Map<String, dynamic>>>.error(error);
     }
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchFavoriteRecipients() {
+    try {
+      return _favoritesCollection
+          .orderBy('lastUsedAt', descending: true)
+          .limit(8)
+          .snapshots();
+    } catch (error) {
+      return Stream<QuerySnapshot<Map<String, dynamic>>>.error(error);
+    }
+  }
+
+  Future<void> saveFavoriteRecipient(PixRecipient recipient) async {
+    if (!isAvailable) {
+      throw StateError('Favoritos indisponiveis neste ambiente.');
+    }
+
+    final now = DateTime.now();
+    final normalizedKey = _normalizeKey(recipient.key);
+    await _favoritesCollection.doc(normalizedKey).set(
+      {
+        'name': recipient.name,
+        'bank': recipient.bank,
+        'key': recipient.key,
+        'normalizedKey': normalizedKey,
+        'keyType': recipient.keyType,
+        'document': recipient.document,
+        'updatedAt': now,
+        'lastUsedAt': now,
+      },
+      SetOptions(merge: true),
+    );
   }
 
   Future<PixSummary> getMonthlySummary() async {
@@ -108,24 +150,17 @@ class PixRepository {
       throw StateError('Informe a chave PIX.');
     }
 
-    final seed = normalizedKey.codeUnits.fold<int>(
-      0,
-      (previous, value) => previous + value,
-    );
-    final names = [
-      'Marina Costa',
-      'Lucas Almeida',
-      'Beatriz Rocha',
-      'Rafael Mendes',
-      'Camila Ferreira',
-    ];
+    final favorite = await _findFavoriteRecipient(normalizedKey);
+    if (favorite != null) return favorite;
 
     return PixRecipient(
-      name: names[seed % names.length],
-      bank: 'Banco parceiro ${100 + (seed % 899)}',
+      name: 'Destinatário não verificado',
+      bank: 'Chave PIX informada pelo usuário',
       key: normalizedKey,
       keyType: keyType,
-      document: '***.${(seed % 900 + 100)}.${(seed % 900 + 100)}-**',
+      document: 'Não verificado',
+      isVerified: false,
+      isFavorite: false,
     );
   }
 
@@ -145,6 +180,11 @@ class PixRepository {
 
     final dailySent = await _dailySentCentavos();
     if (dailySent + valorCentavos > dailyLimitCentavos) {
+      await _registerNotification(
+        type: 'daily_limit',
+        title: 'Limite diário atingido',
+        body: 'Essa transferência ultrapassa seu limite diário de PIX.',
+      );
       throw StateError('Limite diario de PIX excedido.');
     }
 
@@ -189,6 +229,13 @@ class PixRepository {
         'createdAt': now,
       });
     });
+
+    await _registerNotification(
+      type: 'balance_changed',
+      title: 'Saldo atualizado',
+      body: 'PIX enviado no valor de '
+          '${BrFormatters.currencyFromCentavos(valorCentavos)}.',
+    );
 
     return PixReceipt(
       id: docRef.id,
@@ -250,6 +297,13 @@ class PixRepository {
         'createdAt': now,
       });
     });
+
+    await _registerNotification(
+      type: 'pix_received',
+      title: 'PIX recebido',
+      body: 'Você recebeu um PIX de '
+          '${BrFormatters.currencyFromCentavos(valorCentavos)}.',
+    );
 
     return PixReceipt(
       id: docRef.id,
@@ -315,6 +369,43 @@ class PixRepository {
     return total;
   }
 
+  Future<PixRecipient?> _findFavoriteRecipient(String key) async {
+    if (!isAvailable) return null;
+
+    try {
+      final normalizedKey = _normalizeKey(key);
+      final snapshot = await _favoritesCollection.doc(normalizedKey).get();
+      final data = snapshot.data();
+      if (data == null) return null;
+      return PixFavoriteRecipient.fromDoc(snapshot).toRecipient();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _registerNotification({
+    required String type,
+    required String title,
+    required String body,
+  }) async {
+    if (!isAvailable) return;
+    try {
+      await _notificationsCollection.add({
+        'type': type,
+        'title': title,
+        'body': body,
+        'read': false,
+        'createdAt': DateTime.now(),
+      });
+    } catch (_) {
+      // Notificacoes internas nao podem desfazer uma operacao financeira.
+    }
+  }
+
+  static String _normalizeKey(String key) {
+    return key.trim().toLowerCase().replaceAll('/', '_');
+  }
+
   static int _balanceFrom(Map<String, dynamic>? data) {
     return _intFrom(data?['balanceCentavos'], fallback: initialBalanceCentavos);
   }
@@ -343,6 +434,8 @@ class PixRecipient {
     required this.key,
     required this.keyType,
     required this.document,
+    this.isVerified = true,
+    this.isFavorite = false,
   });
 
   final String name;
@@ -350,6 +443,51 @@ class PixRecipient {
   final String key;
   final String keyType;
   final String document;
+  final bool isVerified;
+  final bool isFavorite;
+}
+
+class PixFavoriteRecipient {
+  const PixFavoriteRecipient({
+    required this.id,
+    required this.name,
+    required this.bank,
+    required this.key,
+    required this.keyType,
+    required this.document,
+  });
+
+  factory PixFavoriteRecipient.fromDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data() ?? {};
+    return PixFavoriteRecipient(
+      id: doc.id,
+      name: (data['name'] ?? 'Contato PIX').toString(),
+      bank: (data['bank'] ?? 'Banco não informado').toString(),
+      key: (data['key'] ?? '').toString(),
+      keyType: (data['keyType'] ?? 'E-mail').toString(),
+      document: (data['document'] ?? 'Salvo pelo usuário').toString(),
+    );
+  }
+
+  final String id;
+  final String name;
+  final String bank;
+  final String key;
+  final String keyType;
+  final String document;
+
+  PixRecipient toRecipient() {
+    return PixRecipient(
+      name: name,
+      bank: bank,
+      key: key,
+      keyType: keyType,
+      document: document,
+      isFavorite: true,
+    );
+  }
 }
 
 class PixReceipt {

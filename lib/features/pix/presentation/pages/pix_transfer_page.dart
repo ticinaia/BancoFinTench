@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/services/app_plugins.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -258,6 +260,123 @@ class _PixTransferPageState extends State<PixTransferPage> {
     _mostrarMensagem('Dados PIX preenchidos.');
   }
 
+  void _applyFavoriteRecipient(PixFavoriteRecipient favorite) {
+    final recipient = favorite.toRecipient();
+    setState(() {
+      _tipoChave = recipient.keyType;
+      _chaveController.text = recipient.key;
+      _recipient = recipient;
+    });
+    _mostrarMensagem('Contato frequente preenchido.');
+  }
+
+  Future<void> _saveRecipientAsFavorite(PixRecipient recipient) async {
+    final nameController = TextEditingController(
+      text: recipient.isVerified ? recipient.name : '',
+    );
+    final bankController = TextEditingController(
+      text: recipient.isVerified ? recipient.bank : '',
+    );
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await showModalBottomSheet<PixRecipient>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              8,
+              24,
+              MediaQuery.viewInsetsOf(context).bottom + 24,
+            ),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Salvar contato PIX',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome do destinatário',
+                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    ),
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Informe o nome do contato';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: bankController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Banco',
+                      prefixIcon: Icon(Icons.account_balance_outlined),
+                    ),
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Informe o banco';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (!formKey.currentState!.validate()) return;
+                      Navigator.pop(
+                        context,
+                        PixRecipient(
+                          name: nameController.text.trim(),
+                          bank: bankController.text.trim(),
+                          key: recipient.key,
+                          keyType: recipient.keyType,
+                          document: recipient.document == 'Não verificado'
+                              ? 'Salvo pelo usuário'
+                              : recipient.document,
+                          isFavorite: true,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.star_rounded),
+                    label: const Text('Salvar favorito'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    nameController.dispose();
+    bankController.dispose();
+
+    if (saved == null) return;
+
+    try {
+      await _pixRepository.saveFavoriteRecipient(saved);
+      if (!mounted) return;
+      setState(() => _recipient = saved);
+      _mostrarMensagem('Contato PIX salvo.');
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem('Não foi possível salvar o contato.');
+    }
+  }
+
   _ParsedPixPayload _parsePixPayload(String payload) {
     final text = payload.trim();
     final emvPayload = _parseEmvPixPayload(text);
@@ -341,6 +460,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       appBar: AppBar(
         title: const Text('Transferência PIX'),
       ),
+      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -386,7 +506,28 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: _pixRepository.watchFavoriteRecipients(),
+                builder: (context, snapshot) {
+                  final favorites = snapshot.data?.docs
+                          .map(PixFavoriteRecipient.fromDoc)
+                          .where((favorite) => favorite.key.isNotEmpty)
+                          .toList() ??
+                      const <PixFavoriteRecipient>[];
+
+                  if (favorites.isEmpty) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _FavoriteRecipientsStrip(
+                      favorites: favorites,
+                      onSelected: _applyFavoriteRecipient,
+                    ),
+                  );
+                },
+              ),
               DropdownButtonFormField<String>(
+                key: ValueKey(_tipoChave),
                 initialValue: _tipoChave,
                 items: const [
                   DropdownMenuItem(value: 'E-mail', child: Text('E-mail')),
@@ -432,7 +573,12 @@ class _PixTransferPageState extends State<PixTransferPage> {
               ),
               if (_recipient != null) ...[
                 const SizedBox(height: 12),
-                _RecipientPreview(recipient: _recipient!),
+                _RecipientPreview(
+                  recipient: _recipient!,
+                  onSave: _recipient!.isFavorite
+                      ? null
+                      : () => _saveRecipientAsFavorite(_recipient!),
+                ),
               ],
               const SizedBox(height: 16),
               TextFormField(
@@ -528,10 +674,50 @@ class _ResumoLinha extends StatelessWidget {
   }
 }
 
+class _FavoriteRecipientsStrip extends StatelessWidget {
+  const _FavoriteRecipientsStrip({
+    required this.favorites,
+    required this.onSelected,
+  });
+
+  final List<PixFavoriteRecipient> favorites;
+  final ValueChanged<PixFavoriteRecipient> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 76,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: favorites.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final favorite = favorites[index];
+          return ActionChip(
+            avatar: const Icon(Icons.star_rounded, size: 18),
+            label: SizedBox(
+              width: 118,
+              child: Text(
+                favorite.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            onPressed: () => onSelected(favorite),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _RecipientPreview extends StatelessWidget {
-  const _RecipientPreview({required this.recipient});
+  const _RecipientPreview({
+    required this.recipient,
+    this.onSave,
+  });
 
   final PixRecipient recipient;
+  final VoidCallback? onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -543,8 +729,15 @@ class _RecipientPreview extends StatelessWidget {
         border: Border.all(color: AppColors.secondary.withValues(alpha: 0.22)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.verified_user_outlined, color: AppColors.secondary),
+          Icon(
+            recipient.isVerified
+                ? Icons.verified_user_outlined
+                : Icons.info_outline_rounded,
+            color:
+                recipient.isVerified ? AppColors.secondary : AppColors.warning,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -562,6 +755,31 @@ class _RecipientPreview extends StatelessWidget {
                         color: AppColors.textSecondary,
                       ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  recipient.isFavorite
+                      ? 'Contato frequente'
+                      : recipient.isVerified
+                          ? 'Destinatário verificado'
+                          : 'Chave não verificada. Salve o contato para reutilizar com nome correto.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: recipient.isVerified
+                            ? AppColors.textSecondary
+                            : AppColors.warning,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                if (onSave != null) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: onSave,
+                      icon: const Icon(Icons.star_border_rounded),
+                      label: const Text('Salvar contato'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_theme_controller.dart';
+import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/validators/br_auth_validators.dart';
 
@@ -26,6 +28,7 @@ class _SecurityPageState extends State<SecurityPage> {
   bool _savingProfile = false;
   bool _sendingPassword = false;
   bool _sendingEmail = false;
+  bool _changingPin = false;
   bool _deleting = false;
 
   @override
@@ -92,6 +95,127 @@ class _SecurityPageState extends State<SecurityPage> {
     } finally {
       if (mounted) setState(() => _sendingPassword = false);
     }
+  }
+
+  Future<void> _changePin() async {
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final payload = await showDialog<({String currentPin, String newPin})>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Trocar PIN'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: currentController,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'PIN atual',
+                    counterText: '',
+                  ),
+                  validator: _pinValidator,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: newController,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Novo PIN',
+                    counterText: '',
+                  ),
+                  validator: _pinValidator,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmController,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Confirmar novo PIN',
+                    counterText: '',
+                  ),
+                  validator: (value) {
+                    final error = _pinValidator(value);
+                    if (error != null) return error;
+                    if (value != newController.text) {
+                      return 'Os PINs não coincidem';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                Navigator.pop(
+                  context,
+                  (
+                    currentPin: currentController.text.trim(),
+                    newPin: newController.text.trim(),
+                  ),
+                );
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    currentController.dispose();
+    newController.dispose();
+    confirmController.dispose();
+
+    if (payload == null) return;
+
+    setState(() => _changingPin = true);
+    try {
+      await _authRepository.changeAppPin(
+        currentPin: payload.currentPin,
+        newPin: payload.newPin,
+      );
+      if (!mounted) return;
+      _showMessage('PIN atualizado.');
+    } on StateError catch (error) {
+      if (!mounted) return;
+      _showMessage(error.message);
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage('Não foi possível trocar o PIN.');
+    } finally {
+      if (mounted) setState(() => _changingPin = false);
+    }
+  }
+
+  String? _pinValidator(String? value) {
+    final pin = value?.trim() ?? '';
+    if (pin.length < 4) return 'Use pelo menos 4 dígitos';
+    if (RegExp(r'^(\d)\1*$').hasMatch(pin)) {
+      return 'Evite sequências repetidas';
+    }
+    return null;
   }
 
   Future<void> _requestEmailChange() async {
@@ -237,6 +361,7 @@ class _SecurityPageState extends State<SecurityPage> {
       appBar: AppBar(
         title: const Text('Segurança'),
       ),
+      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 3),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -339,6 +464,48 @@ class _SecurityPageState extends State<SecurityPage> {
                           ? 'Enviando...'
                           : 'Alterar senha por e-mail',
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _changingPin ? null : _changePin,
+                    icon: const Icon(Icons.pin_outlined),
+                    label: Text(_changingPin ? 'Salvando...' : 'Trocar PIN'),
+                  ),
+                  const SizedBox(height: 28),
+                  Text(
+                    'Preferências',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: AppThemeController.mode,
+                    builder: (context, themeMode, _) {
+                      return DropdownButtonFormField<ThemeMode>(
+                        initialValue: themeMode,
+                        decoration: const InputDecoration(
+                          labelText: 'Aparência',
+                          prefixIcon: Icon(Icons.dark_mode_outlined),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: ThemeMode.system,
+                            child: Text('Usar tema do sistema'),
+                          ),
+                          DropdownMenuItem(
+                            value: ThemeMode.light,
+                            child: Text('Modo claro'),
+                          ),
+                          DropdownMenuItem(
+                            value: ThemeMode.dark,
+                            child: Text('Modo escuro'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          AppThemeController.setMode(value);
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 28),
                   Text(

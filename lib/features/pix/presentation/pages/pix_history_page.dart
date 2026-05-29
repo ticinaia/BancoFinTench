@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../data/repositories/pix_repository.dart';
 
@@ -344,12 +345,15 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
           IconButton(
             onPressed: _showFilters,
             icon: Icon(
-              _hasFilters ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+              _hasFilters
+                  ? Icons.filter_alt_rounded
+                  : Icons.filter_alt_outlined,
             ),
             tooltip: 'Filtrar',
           ),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 2),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _pixRepository.watchPixHistory(),
         builder: (context, snapshot) {
@@ -494,8 +498,8 @@ class _StatementItem {
       keyType: (data['tipoChave'] ?? 'PIX').toString(),
       counterpartyName:
           (data['recipientName'] ?? 'Pessoa não informada').toString(),
-      counterpartyBank: (data['recipientBank'] ?? 'Banco não informado')
-          .toString(),
+      counterpartyBank:
+          (data['recipientBank'] ?? 'Banco não informado').toString(),
       counterpartyDocument: (data['recipientDocument'] ?? '').toString(),
       amountCentavos: _centavosFrom(data),
       direction: (data['direction'] ?? 'sent').toString(),

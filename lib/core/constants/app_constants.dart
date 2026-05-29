@@ -19,7 +19,6 @@ class AppConstants {
   static const Duration receiveTimeout = Duration(seconds: 30);
 
   // Chaves de armazenamento seguro
-  static const String tokenKey = 'auth_token';
   static const String userIdKey = 'user_id';
   static const String biometricEnabledKey = 'biometric_enabled';
   static const String appPinKey = 'app_pin';

@@ -127,6 +127,23 @@ class AuthRepository {
     return AuthSecurityService.validatePin(userId: user.uid, pin: pin);
   }
 
+  Future<void> changeAppPin({
+    required String currentPin,
+    required String newPin,
+  }) async {
+    final user = currentUser;
+    if (user == null) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    final valid = await validateAppPin(currentPin);
+    if (!valid) {
+      throw StateError('PIN atual incorreto.');
+    }
+
+    await AuthSecurityService.savePin(userId: user.uid, pin: newPin);
+  }
+
   Future<AppUser?> currentAppUser() async {
     final user = currentUser;
     if (user == null || !_userRepository.isAvailable) return null;

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/utils/br_formatters.dart';
 import '../../data/repositories/pix_repository.dart';
 
@@ -100,6 +101,7 @@ Código: ${receipt.id}
           ),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -138,9 +140,8 @@ Código: ${receipt.id}
             ),
             const SizedBox(height: 20),
             _ReceiptLine(
-              label: receipt.direction == 'received'
-                  ? 'Pagador'
-                  : 'Destinatário',
+              label:
+                  receipt.direction == 'received' ? 'Pagador' : 'Destinatário',
               value: receipt.recipientName,
             ),
             _ReceiptLine(label: 'Banco', value: receipt.recipientBank),
