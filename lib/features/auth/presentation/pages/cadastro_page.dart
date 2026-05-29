@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/app_repositories.dart';
+import '../../../../core/utils/br_input_formatters.dart';
 import '../../domain/validators/br_auth_validators.dart';
 
 class CadastroPage extends StatefulWidget {
@@ -191,6 +192,7 @@ class _CadastroPageState extends State<CadastroPage> {
                   TextFormField(
                     controller: _cpfController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [BrInputFormatters.cpf],
                     decoration: const InputDecoration(
                       labelText: 'CPF',
                       prefixIcon: Icon(Icons.credit_card_outlined),
@@ -208,6 +210,7 @@ class _CadastroPageState extends State<CadastroPage> {
                   TextFormField(
                     controller: _telefoneController,
                     keyboardType: TextInputType.phone,
+                    inputFormatters: [BrInputFormatters.brMobilePhone],
                     decoration: const InputDecoration(
                       labelText: 'Celular',
                       prefixIcon: Icon(Icons.phone_outlined),

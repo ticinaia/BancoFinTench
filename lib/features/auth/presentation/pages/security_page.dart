@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_controller.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/services/app_repositories.dart';
+import '../../../../core/utils/br_input_formatters.dart';
 import '../../domain/validators/br_auth_validators.dart';
 
 class SecurityPage extends StatefulWidget {
@@ -394,6 +395,7 @@ class _SecurityPageState extends State<SecurityPage> {
                         TextFormField(
                           controller: _cpfController,
                           keyboardType: TextInputType.number,
+                          inputFormatters: [BrInputFormatters.cpf],
                           decoration: const InputDecoration(
                             labelText: 'CPF',
                             prefixIcon: Icon(Icons.credit_card_outlined),
@@ -409,6 +411,7 @@ class _SecurityPageState extends State<SecurityPage> {
                         TextFormField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
+                          inputFormatters: [BrInputFormatters.brMobilePhone],
                           decoration: const InputDecoration(
                             labelText: 'Celular',
                             prefixIcon: Icon(Icons.phone_outlined),

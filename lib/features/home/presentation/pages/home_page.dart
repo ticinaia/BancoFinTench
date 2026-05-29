@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
       );
     } catch (_) {
       if (mounted) {
-        _mostrarMensagem('Erro ao autenticar.');
+        _mostrarMensagem('Não foi possível confirmar sua identidade agora.');
       }
       return false;
     }
@@ -127,10 +127,11 @@ class _HomePageState extends State<HomePage> {
       await _authRepository.updateProfileImageBytes(bytes);
 
       if (!mounted) return;
-      _mostrarMensagem('Imagem de perfil atualizada.');
+      _mostrarMensagem('Foto de perfil atualizada.');
     } catch (_) {
       if (mounted) {
-        _mostrarMensagem('Erro ao selecionar imagem.');
+        _mostrarMensagem(
+            'Não conseguimos atualizar a foto. Tente outra imagem.');
       }
     }
   }
@@ -206,7 +207,7 @@ Agência: 0001
 Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
 ''';
     await Clipboard.setData(ClipboardData(text: text.trim()));
-    _mostrarMensagem('Dados da conta copiados.');
+    _mostrarMensagem('Dados da conta copiados para a área de transferência.');
   }
 
   @override
@@ -303,7 +304,7 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
                                 ),
                           ),
                           Text(
-                            'Toque na foto para personalizar',
+                            'Toque na foto para deixar a conta com a sua cara',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.textSecondary,

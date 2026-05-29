@@ -137,11 +137,12 @@ class ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: AppColors.surface,
+      color: colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: AppColors.outline),
+        side: BorderSide(color: Theme.of(context).dividerColor),
       ),
       child: InkWell(
         onTap: onTap,
@@ -166,7 +167,7 @@ class ActionTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: colorScheme.onSurface,
                     ),
               ),
             ],
@@ -193,12 +194,13 @@ class SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,6 +246,7 @@ class _RecentPixListState extends State<RecentPixList> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _recentPixStream,
       builder: (context, snapshot) {
@@ -264,8 +267,9 @@ class _RecentPixListState extends State<RecentPixList> {
         if (docs.isEmpty) {
           return HomeInfoPanel(
             icon: Icons.pix_rounded,
-            title: 'Nenhuma transferência ainda',
-            message: 'Faça seu primeiro PIX e ele\naparecerá aqui.',
+            title: 'Seu extrato começa no primeiro PIX',
+            message:
+                'Quando você enviar ou receber, os movimentos aparecem aqui.',
             action: OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(
                 context,
@@ -279,9 +283,9 @@ class _RecentPixListState extends State<RecentPixList> {
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.outline),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Column(
             children: docs.map((doc) {
@@ -379,12 +383,13 @@ class HomeInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

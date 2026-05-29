@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/utils/br_formatters.dart';
@@ -48,7 +49,8 @@ class PixReceiptPage extends StatelessWidget {
     await Clipboard.setData(ClipboardData(text: receipt.id));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Código da transação copiado.')),
+      const SnackBar(
+          content: Text('Código copiado. Guarde para consultar depois.')),
     );
   }
 
@@ -92,7 +94,7 @@ Código: ${receipt.id}
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Comprovante'),
+        title: const Text('Comprovante PIX'),
         actions: [
           IconButton(
             onPressed: _share,
@@ -115,12 +117,25 @@ Código: ${receipt.id}
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    color: AppColors.secondaryLight,
-                    size: 36,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: AppColors.secondaryLight,
+                        size: 36,
+                      ),
+                      const Spacer(),
+                      _StatusPill(label: _statusLabel(receipt.status)),
+                    ],
                   ),
                   const SizedBox(height: 20),
+                  Text(
+                    'Comprovante BancoFinTech',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.72),
+                        ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     BrFormatters.currencyFromCentavos(receipt.valorCentavos),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -130,7 +145,7 @@ Código: ${receipt.id}
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '${_receiptTypeLabel(receipt)} ${_statusLabel(receipt.status).toLowerCase()}',
+                    _receiptTypeLabel(receipt),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.72),
                         ),
@@ -150,21 +165,115 @@ Código: ${receipt.id}
             _ReceiptLine(label: 'Chave', value: receipt.chave),
             _ReceiptLine(
                 label: 'Data', value: BrFormatters.dateTime(receipt.createdAt)),
-            _ReceiptLine(label: 'Código', value: receipt.id),
+            const SizedBox(height: 16),
+            _ReceiptCodeBlock(
+              code: receipt.id,
+              onCopy: () => _copyCode(context),
+            ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
+              onPressed: () => Navigator.pushReplacementNamed(
+                context,
+                receipt.direction == 'received'
+                    ? AppRoutes.pixReceive
+                    : AppRoutes.pixTransfer,
+              ),
+              icon: const Icon(Icons.pix_rounded),
+              label: Text(
+                receipt.direction == 'received'
+                    ? 'Receber outro PIX'
+                    : 'Enviar novo PIX',
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
               onPressed: _share,
               icon: const Icon(Icons.ios_share_rounded),
               label: const Text('Compartilhar comprovante'),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
+            TextButton.icon(
               onPressed: () => _copyCode(context),
               icon: const Icon(Icons.copy_rounded),
-              label: const Text('Copiar código da transação'),
+              label: const Text('Copiar código'),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.34)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+      ),
+    );
+  }
+}
+
+class _ReceiptCodeBlock extends StatelessWidget {
+  const _ReceiptCodeBlock({
+    required this.code,
+    required this.onCopy,
+  });
+
+  final String code;
+  final VoidCallback onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Código da transação',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  code,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onCopy,
+            icon: const Icon(Icons.copy_rounded),
+            tooltip: 'Copiar código',
+          ),
+        ],
       ),
     );
   }
@@ -181,11 +290,12 @@ class _ReceiptLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = Theme.of(context).dividerColor;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.outline),
+          bottom: BorderSide(color: borderColor),
         ),
       ),
       child: Row(

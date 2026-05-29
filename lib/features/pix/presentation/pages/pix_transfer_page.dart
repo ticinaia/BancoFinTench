@@ -75,7 +75,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     try {
       final saldo = await _pixRepository.getBalanceCentavos();
       if (valorCentavos > saldo) {
-        _mostrarMensagem('Saldo insuficiente para enviar este PIX.');
+        _mostrarMensagem('Seu saldo não cobre esse PIX. Confira o valor.');
         return;
       }
 
@@ -141,7 +141,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       _mostrarMensagem(error.message);
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível confirmar os dados do PIX.');
+      _mostrarMensagem('Não conseguimos conferir os dados do PIX agora.');
     }
   }
 
@@ -151,7 +151,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     try {
       final autenticado = await _autenticarAcaoSensivel();
       if (!autenticado) {
-        _mostrarMensagem('Autenticação cancelada.');
+        _mostrarMensagem('Autenticação cancelada. Nenhum valor foi enviado.');
         return;
       }
 
@@ -163,7 +163,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       );
 
       if (!mounted) return;
-      _mostrarMensagem('PIX enviado com sucesso.');
+      _mostrarMensagem('PIX enviado com sucesso. Comprovante gerado.');
       Navigator.pushReplacementNamed(
         context,
         AppRoutes.pixReceipt,
@@ -174,7 +174,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       _mostrarMensagem(error.message);
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível enviar o PIX.');
+      _mostrarMensagem('Não foi possível enviar o PIX. Tente novamente.');
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -259,8 +259,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text?.trim();
     if (text == null || text.isEmpty) {
-      _mostrarMensagem(
-          'Nenhum código PIX encontrado na área de transferência.');
+      _mostrarMensagem('Não encontrei um código PIX na área de transferência.');
       return;
     }
     _applyPixPayload(text);
