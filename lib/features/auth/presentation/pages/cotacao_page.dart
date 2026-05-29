@@ -93,6 +93,18 @@ class _CotacaoPageState extends State<CotacaoPage> {
   }
 
   Widget _buildBody() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = colorScheme.onSurface;
+    final textSecondary = colorScheme.onSurface.withValues(alpha: 0.72);
+    final symbolColor = isDark ? AppColors.secondaryLight : AppColors.primary;
+    final symbolBackground =
+        symbolColor.withValues(alpha: isDark ? 0.18 : 0.10);
+    const positiveLight = Color(0xFF007A5E);
+    const positiveDark = Color(0xFF7DE7C7);
+    const negativeLight = Color(0xFFC62828);
+    const negativeDark = Color(0xFFFF8A94);
+
     if (_isLoading && _cotacoes.isEmpty) {
       return const Center(
         child: Column(
@@ -154,7 +166,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
                 'Última atualização da API: ${_formatarHorario(_ultimaAtualizacaoApi())}',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                     ),
               ),
             ),
@@ -171,7 +183,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
+                        color: symbolBackground,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Center(
@@ -179,7 +191,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
                           _symbolFor(cotacao.code),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppColors.primary,
+                                    color: symbolColor,
                                     fontWeight: FontWeight.w800,
                                   ),
                         ),
@@ -197,6 +209,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
                                 .titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  color: textPrimary,
                                 ),
                           ),
                           const SizedBox(height: 4),
@@ -204,7 +217,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
                             'Código: ${cotacao.code}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: textSecondary,
                                     ),
                           ),
                         ],
@@ -213,61 +226,83 @@ class _CotacaoPageState extends State<CotacaoPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          _formatarPreco(cotacao),
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDark,
+                        Builder(
+                          builder: (context) {
+                            final variationColor = variationIsPositive
+                                ? isDark
+                                    ? positiveDark
+                                    : positiveLight
+                                : isDark
+                                    ? negativeDark
+                                    : negativeLight;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  _formatarPreco(cotacao),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: textPrimary,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
                                   ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: variationIsPositive
-                                ? AppColors.success.withValues(alpha: 0.10)
-                                : AppColors.error.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                variationIsPositive
-                                    ? Icons.trending_up_rounded
-                                    : Icons.trending_down_rounded,
-                                size: 14,
-                                color: variationIsPositive
-                                    ? AppColors.success
-                                    : AppColors.error,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${_formatarVariacao(cotacao.variation)}%',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: variationIsPositive
-                                          ? AppColors.success
-                                          : AppColors.error,
-                                      fontWeight: FontWeight.w700,
+                                  decoration: BoxDecoration(
+                                    color: variationColor.withValues(
+                                      alpha: isDark ? 0.18 : 0.10,
                                     ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatarHorario(cotacao.updatedAt),
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: variationColor.withValues(
+                                        alpha: isDark ? 0.46 : 0.22,
+                                      ),
+                                    ),
                                   ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        variationIsPositive
+                                            ? Icons.trending_up_rounded
+                                            : Icons.trending_down_rounded,
+                                        size: 14,
+                                        color: variationColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${_formatarVariacao(cotacao.variation)}%',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: variationColor,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatarHorario(cotacao.updatedAt),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: textSecondary,
+                                      ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),

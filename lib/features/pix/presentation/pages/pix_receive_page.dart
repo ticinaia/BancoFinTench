@@ -25,6 +25,15 @@ class _PixReceivePageState extends State<PixReceivePage> {
   final _authRepository = AppRepositories.auth;
 
   bool _simulando = false;
+  String _selectedPixKeyType = 'E-mail';
+  String? _profileCpf;
+  String? _profilePhone;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPixKeyOptions();
+  }
 
   @override
   void dispose() {
@@ -33,9 +42,25 @@ class _PixReceivePageState extends State<PixReceivePage> {
   }
 
   String get _pixKey {
+    final selectedType = _effectiveSelectedPixKeyType;
+    final option = _pixKeyOptions().where(
+      (option) => option.type == selectedType,
+    );
+    if (option.isNotEmpty) return option.first.value;
+
+    return _fallbackRandomKey;
+  }
+
+  String get _effectiveSelectedPixKeyType {
+    final options = _pixKeyOptions();
+    if (options.any((option) => option.type == _selectedPixKeyType)) {
+      return _selectedPixKeyType;
+    }
+    return options.first.type;
+  }
+
+  String get _fallbackRandomKey {
     final user = _authRepository.currentUser;
-    final email = user?.email?.trim();
-    if (email != null && email.isNotEmpty) return email;
     return '${_accountCodeFromUid(user?.uid)}@bancofintech.com';
   }
 
@@ -58,10 +83,56 @@ class _PixReceivePageState extends State<PixReceivePage> {
     return user?.email?.split('@').first ?? 'Cliente';
   }
 
-  Future<void> _copyPayload() async {
-    await Clipboard.setData(ClipboardData(text: _pixPayload));
+  Future<void> _loadPixKeyOptions() async {
+    try {
+      final appUser = await _authRepository.currentAppUser();
+      if (!mounted) return;
+
+      setState(() {
+        _profileCpf = _onlyDigits(appUser?.cpf ?? '');
+        _profilePhone = _onlyDigits(appUser?.phone ?? '');
+        final options = _pixKeyOptions();
+        if (!options.any((option) => option.type == _selectedPixKeyType)) {
+          _selectedPixKeyType = options.first.type;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        final options = _pixKeyOptions();
+        if (!options.any((option) => option.type == _selectedPixKeyType)) {
+          _selectedPixKeyType = options.first.type;
+        }
+      });
+    }
+  }
+
+  List<_PixKeyOption> _pixKeyOptions() {
+    final user = _authRepository.currentUser;
+    final email = user?.email?.trim();
+    final cpf = _profileCpf?.trim();
+    final phone = _profilePhone?.trim();
+
+    return [
+      if (email != null && email.isNotEmpty)
+        _PixKeyOption(type: 'E-mail', label: 'E-mail cadastrado', value: email),
+      if (cpf != null && cpf.isNotEmpty)
+        _PixKeyOption(type: 'CPF', label: 'CPF cadastrado', value: cpf),
+      if (phone != null && phone.isNotEmpty)
+        _PixKeyOption(
+            type: 'Telefone', label: 'Celular cadastrado', value: phone),
+      _PixKeyOption(
+        type: 'Aleatória',
+        label: 'Chave aleatória do app',
+        value: _fallbackRandomKey,
+      ),
+    ];
+  }
+
+  Future<void> _copyPixKey() async {
+    await Clipboard.setData(ClipboardData(text: _pixKey));
     if (!mounted) return;
-    _showMessage('Código PIX copiado.');
+    _showMessage('Chave PIX copiada.');
   }
 
   Future<void> _simularRecebimento() async {
@@ -77,7 +148,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
     try {
       final receipt = await _pixRepository.receberPix(
         chave: _pixKey,
-        tipoChave: 'E-mail',
+        tipoChave: _effectiveSelectedPixKeyType,
         valorCentavos: valorCentavos,
         payerName: 'Cliente pagador',
         payerBank: 'Banco de origem',
@@ -267,6 +338,8 @@ class _PixReceivePageState extends State<PixReceivePage> {
   @override
   Widget build(BuildContext context) {
     final valor = _valorCentavos;
+    final pixKeyOptions = _pixKeyOptions();
+    final selectedPixKeyType = _effectiveSelectedPixKeyType;
 
     return Scaffold(
       appBar: AppBar(
@@ -313,6 +386,26 @@ class _PixReceivePageState extends State<PixReceivePage> {
                 ),
               ),
               const SizedBox(height: 24),
+              DropdownButtonFormField<String>(
+                initialValue: selectedPixKeyType,
+                items: pixKeyOptions
+                    .map(
+                      (option) => DropdownMenuItem(
+                        value: option.type,
+                        child: Text(option.label),
+                      ),
+                    )
+                    .toList(),
+                decoration: const InputDecoration(
+                  labelText: 'Chave para receber',
+                  prefixIcon: Icon(Icons.key_rounded),
+                ),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _selectedPixKeyType = value);
+                },
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _valorController,
                 keyboardType: TextInputType.number,
@@ -351,6 +444,10 @@ class _PixReceivePageState extends State<PixReceivePage> {
                 ),
               ),
               const SizedBox(height: 16),
+              _ReceiveInfoLine(
+                label: 'Tipo de chave',
+                value: selectedPixKeyType,
+              ),
               _ReceiveInfoLine(label: 'Chave', value: _pixKey),
               _ReceiveInfoLine(
                 label: 'Valor',
@@ -360,9 +457,9 @@ class _PixReceivePageState extends State<PixReceivePage> {
               ),
               const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: _copyPayload,
+                onPressed: _copyPixKey,
                 icon: const Icon(Icons.copy_rounded),
-                label: const Text('Copiar código PIX'),
+                label: const Text('Copiar chave PIX'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -435,4 +532,16 @@ class _ReceiveInfoLine extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PixKeyOption {
+  const _PixKeyOption({
+    required this.type,
+    required this.label,
+    required this.value,
+  });
+
+  final String type;
+  final String label;
+  final String value;
 }
