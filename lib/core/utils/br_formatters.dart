@@ -1,47 +1,42 @@
+import 'package:intl/intl.dart';
+
 class BrFormatters {
   BrFormatters._();
 
+  static final NumberFormat _currencyFormatter = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+  );
+
+  static final DateFormat _dateTimeFormatter = DateFormat(
+    'dd/MM/yyyy HH:mm',
+    'pt_BR',
+  );
+
+  static final DateFormat _dateFormatter = DateFormat(
+    'dd/MM/yyyy',
+    'pt_BR',
+  );
+
   static int parseCurrencyToCentavos(String input) {
-    final normalized = input.trim().replaceAll('.', '').replaceAll(',', '.');
+    final normalized = input
+        .trim()
+        .replaceAll(RegExp(r'[^\d,.-]'), '')
+        .replaceAll('.', '')
+        .replaceAll(',', '.');
     final value = double.tryParse(normalized) ?? 0;
     return (value * 100).round();
   }
 
   static String currencyFromCentavos(int centavos) {
-    final reais = centavos ~/ 100;
-    final cents = (centavos % 100).toString().padLeft(2, '0');
-    return 'R\$ ${_formatThousands(reais)},$cents';
+    return _currencyFormatter.format(centavos / 100);
   }
 
   static String dateTime(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/$year $hour:$minute';
+    return _dateTimeFormatter.format(date);
   }
 
   static String date(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    return '$day/$month/$year';
-  }
-
-  static String _formatThousands(int value) {
-    final digits = value.toString();
-    final buffer = StringBuffer();
-
-    for (var i = 0; i < digits.length; i++) {
-      final remaining = digits.length - i;
-      buffer.write(digits[i]);
-
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-
-    return buffer.toString();
+    return _dateFormatter.format(date);
   }
 }

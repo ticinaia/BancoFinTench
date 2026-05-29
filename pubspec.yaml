@@ -15,9 +15,6 @@ dependencies:
   firebase_auth: ^5.0.0
   cloud_firestore: ^5.0.0
 
-  # Estado
-  flutter_riverpod: ^2.6.1
-
   # Rede / AwesomeAPI
   dio: ^5.4.0
 
