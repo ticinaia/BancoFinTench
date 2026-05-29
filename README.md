@@ -136,12 +136,9 @@ lib/features/splash/presentation/pages/splash_page.dart
 Passo a passo:
 
 1. Mostra o logo e o nome BancoFinTech.
-2. Executa animacoes de fade, escala e slide.
-3. Aguarda `AppConstants.splashDuration`, atualmente 3 segundos.
-4. Redireciona para a tela de login.
-
-No futuro, a splash deve verificar se existe sessao ativa. Se o usuario ja
-estiver logado, deve ir para `home`; caso contrario, deve ir para `login`.
+2. Executa animações de fade, escala e slide.
+3. Verifica a sessão ativa assim que o Firebase estiver pronto.
+4. Redireciona para login, verificação de e-mail, criação de PIN ou bloqueio.
 
 ### Login
 

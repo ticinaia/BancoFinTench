@@ -6,7 +6,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_controller.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../domain/validators/br_auth_validators.dart';
 
 class SecurityPage extends StatefulWidget {
@@ -22,7 +22,7 @@ class _SecurityPageState extends State<SecurityPage> {
   final _cpfController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-  final _authRepository = AuthRepository();
+  final _authRepository = AppRepositories.auth;
 
   bool _loading = true;
   bool _savingProfile = false;

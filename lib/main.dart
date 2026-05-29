@@ -7,8 +7,8 @@ import 'app/routes/app_routes.dart';
 import 'app/theme/app_theme.dart';
 import 'app/theme/app_theme_controller.dart';
 import 'core/constants/app_constants.dart';
+import 'core/services/app_repositories.dart';
 import 'core/services/app_plugins.dart';
-import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/data/services/auth_session_service.dart';
 
 final _appNavigatorKey = GlobalKey<NavigatorState>();
@@ -49,6 +49,7 @@ class BancoFinTechApp extends StatelessWidget {
         return MaterialApp(
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
+          themeAnimationDuration: Duration.zero,
           navigatorKey: _appNavigatorKey,
           navigatorObservers: [_appRouteObserver],
           theme: AppTheme.lightTheme,
@@ -70,25 +71,28 @@ class BancoFinTechApp extends StatelessWidget {
   }
 }
 
-class _AppRouteObserver extends NavigatorObserver {
+class _AppRouteObserver extends NavigatorObserver with ChangeNotifier {
   String? currentRoute;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     currentRoute = route.settings.name;
     super.didPush(route, previousRoute);
+    notifyListeners();
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     currentRoute = previousRoute?.settings.name;
     super.didPop(route, previousRoute);
+    notifyListeners();
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     currentRoute = newRoute?.settings.name;
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    notifyListeners();
   }
 }
 
@@ -107,9 +111,11 @@ class _SessionTimeoutGuard extends StatefulWidget {
   State<_SessionTimeoutGuard> createState() => _SessionTimeoutGuardState();
 }
 
-class _SessionTimeoutGuardState extends State<_SessionTimeoutGuard> {
+class _SessionTimeoutGuardState extends State<_SessionTimeoutGuard>
+    with WidgetsBindingObserver {
   Timer? _timer;
-  final _authRepository = AuthRepository();
+  DateTime? _backgroundedAt;
+  final _authRepository = AppRepositories.auth;
 
   static const _publicRoutes = {
     AppRoutes.splash,
@@ -123,19 +129,60 @@ class _SessionTimeoutGuardState extends State<_SessionTimeoutGuard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.routeObserver.addListener(_handleRouteChanged);
     _resetTimer();
   }
 
   @override
   void dispose() {
+    widget.routeObserver.removeListener(_handleRouteChanged);
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _backgroundedAt = DateTime.now();
+      return;
+    }
+
+    if (state != AppLifecycleState.resumed) return;
+
+    final backgroundedAt = _backgroundedAt;
+    _backgroundedAt = null;
+
+    if (backgroundedAt != null &&
+        DateTime.now().difference(backgroundedAt) >=
+            AppConstants.sessionTimeout) {
+      _expireSession();
+      return;
+    }
+
+    _resetTimer();
+  }
+
+  void _handleRouteChanged() {
+    final currentRoute = widget.routeObserver.currentRoute;
+    if (_publicRoutes.contains(currentRoute)) {
+      _timer?.cancel();
+      return;
+    }
+
+    _resetTimer();
   }
 
   void _resetTimer() {
     _timer?.cancel();
 
-    if (_authRepository.currentUser == null) return;
+    if (_authRepository.currentUser == null ||
+        _publicRoutes.contains(widget.routeObserver.currentRoute)) {
+      return;
+    }
 
     _timer = Timer(AppConstants.sessionTimeout, _expireSession);
   }

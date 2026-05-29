@@ -15,7 +15,7 @@ class UserRepository {
   CollectionReference<Map<String, dynamic>> get _users {
     final firestore = _firestore;
     if (firestore == null) {
-      throw StateError('Firestore ainda nao foi inicializado.');
+      throw StateError('Firestore ainda não foi inicializado.');
     }
     return firestore.collection(AppConstants.usersCollection);
   }

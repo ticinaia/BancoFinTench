@@ -6,8 +6,19 @@ class CotacaoRepository {
   CotacaoRepository({Dio? dio}) : _dio = dio ?? AppPlugins.dio;
 
   final Dio _dio;
+  List<Cotacao>? _cachedCotacoes;
+  DateTime? _cachedAt;
 
-  Future<List<Cotacao>> getCotacoes() async {
+  Future<List<Cotacao>> getCotacoes({bool forceRefresh = false}) async {
+    final cached = _cachedCotacoes;
+    final cachedAt = _cachedAt;
+    if (!forceRefresh &&
+        cached != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < const Duration(minutes: 1)) {
+      return cached;
+    }
+
     try {
       final response = await _dio.get(
         '/json/last/USD-BRL,EUR-BRL,BTC-BRL',
@@ -31,11 +42,14 @@ class CotacaoRepository {
         throw Exception('A API não retornou todas as cotações esperadas.');
       }
 
-      return [
+      final cotacoes = [
         Cotacao.fromJson(dolar),
         Cotacao.fromJson(euro),
         Cotacao.fromJson(bitcoin),
       ];
+      _cachedCotacoes = cotacoes;
+      _cachedAt = DateTime.now();
+      return cotacoes;
     } on DioException catch (e) {
       throw Exception(_formatarErroDio(e));
     } catch (e) {

@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/routes/app_routes.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../../../core/utils/br_formatters.dart';
-import '../../data/repositories/pix_repository.dart';
+import '../models/pix_statement_item.dart';
+import '../widgets/pix_history_widgets.dart';
 
 class PixHistoryPage extends StatefulWidget {
   const PixHistoryPage({super.key});
@@ -16,12 +17,23 @@ class PixHistoryPage extends StatefulWidget {
 }
 
 class _PixHistoryPageState extends State<PixHistoryPage> {
-  final _pixRepository = PixRepository();
+  static const int _historyPageSize = 50;
+
+  final _pixRepository = AppRepositories.pix;
+  late Stream<QuerySnapshot<Map<String, dynamic>>> _historyStream;
+  int _historyLimit = _historyPageSize;
+  bool _loadingMoreHistory = false;
   String _typeFilter = 'all';
   DateTime? _startDate;
   DateTime? _endDate;
   int? _minCentavos;
   int? _maxCentavos;
+
+  @override
+  void initState() {
+    super.initState();
+    _historyStream = _pixRepository.watchPixHistory(limit: _historyLimit);
+  }
 
   bool get _hasFilters {
     return _typeFilter != 'all' ||
@@ -54,7 +66,7 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
     }
   }
 
-  void _compartilharComprovante(_StatementItem item) {
+  void _compartilharComprovante(PixStatementItem item) {
     Share.share(
       'Comprovante BancoFinTech\n\nValor: ${item.formattedAmount}\nTipo: ${item.typeLabel}\nPessoa: ${item.counterpartyName}\nBanco: ${item.counterpartyBank}\nChave: ${item.key}\nData: ${item.formattedDate}\nStatus: ${item.statusLabel}\nCódigo: ${item.id}',
     );
@@ -284,21 +296,47 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
     });
   }
 
-  List<_StatementItem> _itemsFromDocs(
+  bool _handleScroll(ScrollNotification notification, {required bool hasMore}) {
+    if (!hasMore) return false;
+    if (_loadingMoreHistory) return false;
+    if (notification.metrics.extentAfter > 320) return false;
+
+    _scheduleLoadMoreHistory();
+    return false;
+  }
+
+  void _scheduleLoadMoreHistory() {
+    if (_loadingMoreHistory) return;
+    _loadingMoreHistory = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _loadingMoreHistory = false;
+        return;
+      }
+
+      setState(() {
+        _historyLimit += _historyPageSize;
+        _historyStream = _pixRepository.watchPixHistory(limit: _historyLimit);
+        _loadingMoreHistory = false;
+      });
+    });
+  }
+
+  List<PixStatementItem> _itemsFromDocs(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
-    final items = docs.map(_StatementItem.fromDoc).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final items = docs.map(PixStatementItem.fromDoc).toList();
 
     if (!_hasFilters || _typeFilter == 'initial') {
-      items.add(_StatementItem.initialBalance());
+      items.add(PixStatementItem.initialBalance());
     }
 
     return items.where(_matchesFilters).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
-  bool _matchesFilters(_StatementItem item) {
+  bool _matchesFilters(PixStatementItem item) {
     if (_typeFilter == 'sent' && item.direction != 'sent') return false;
     if (_typeFilter == 'received' && item.direction != 'received') {
       return false;
@@ -355,10 +393,10 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
       ),
       bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 2),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _pixRepository.watchPixHistory(),
+        stream: _historyStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const _CenteredState(
+            return const CenteredState(
               icon: Icons.error_outline_rounded,
               title: 'Erro ao carregar extrato',
               subtitle: 'Confira sua conexão e tente novamente.',
@@ -372,9 +410,21 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
           }
 
           final items = _itemsFromDocs(snapshot.data?.docs ?? []);
+          final loadedDocs = snapshot.data?.docs.length ?? 0;
+          final hasMore = loadedDocs >= _historyLimit;
+
+          if (_hasFilters && hasMore) {
+            _scheduleLoadMoreHistory();
+          }
+
+          if (_hasFilters && items.isEmpty && hasMore) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
 
           if (items.isEmpty) {
-            return _CenteredState(
+            return CenteredState(
               icon: Icons.receipt_long_outlined,
               title: 'Nenhum lançamento encontrado',
               subtitle: _hasFilters
@@ -389,323 +439,40 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-            itemCount: items.length + (_hasFilters ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              if (_hasFilters && index == 0) {
-                return _ActiveFiltersBanner(onClear: _clearFilters);
-              }
-
-              final item = items[_hasFilters ? index - 1 : index];
-
-              return Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.outline),
-                ),
-                child: ListTile(
-                  onTap: item.canOpenReceipt
-                      ? () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.pixReceipt,
-                            arguments: item.toReceipt(),
-                          );
-                        }
-                      : null,
-                  contentPadding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-                  leading: Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: item.color.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(item.icon, color: item.color),
-                  ),
-                  title: Text(
-                    item.signedAmount,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: item.amountColor,
-                        ),
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.title),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${item.formattedDate} • ${item.statusLabel}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  trailing: item.status == 'pendente'
-                      ? IconButton(
-                          icon: const Icon(Icons.cancel_outlined),
-                          tooltip: 'Cancelar PIX',
-                          onPressed: () => _cancelarPixPendente(
-                            context: context,
-                            id: item.id,
-                          ),
-                        )
-                      : item.canShare
-                          ? IconButton(
-                              icon: const Icon(Icons.ios_share_rounded),
-                              tooltip: 'Compartilhar comprovante',
-                              onPressed: () => _compartilharComprovante(item),
-                            )
-                          : null,
-                ),
-              );
+          return NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              return _handleScroll(notification, hasMore: hasMore);
             },
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              itemCount: items.length + (_hasFilters ? 1 : 0),
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                if (_hasFilters && index == 0) {
+                  return ActiveFiltersBanner(onClear: _clearFilters);
+                }
+
+                final item = items[_hasFilters ? index - 1 : index];
+
+                return PixStatementTile(
+                  item: item,
+                  onOpenReceipt: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.pixReceipt,
+                      arguments: item.toReceipt(),
+                    );
+                  },
+                  onCancel: () => _cancelarPixPendente(
+                    context: context,
+                    id: item.id,
+                  ),
+                  onShare: () => _compartilharComprovante(item),
+                );
+              },
+            ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _StatementItem {
-  const _StatementItem({
-    required this.id,
-    required this.key,
-    required this.keyType,
-    required this.counterpartyName,
-    required this.counterpartyBank,
-    required this.counterpartyDocument,
-    required this.amountCentavos,
-    required this.direction,
-    required this.transactionType,
-    required this.status,
-    required this.date,
-  });
-
-  factory _StatementItem.fromDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
-    return _StatementItem(
-      id: doc.id,
-      key: (data['chave'] ?? 'Chave não informada').toString(),
-      keyType: (data['tipoChave'] ?? 'PIX').toString(),
-      counterpartyName:
-          (data['recipientName'] ?? 'Pessoa não informada').toString(),
-      counterpartyBank:
-          (data['recipientBank'] ?? 'Banco não informado').toString(),
-      counterpartyDocument: (data['recipientDocument'] ?? '').toString(),
-      amountCentavos: _centavosFrom(data),
-      direction: (data['direction'] ?? 'sent').toString(),
-      transactionType: (data['transactionType'] ?? 'pix').toString(),
-      status: (data['status'] ?? 'concluido').toString(),
-      date: _dateFrom(data['data'] ?? data['createdAt']),
-    );
-  }
-
-  factory _StatementItem.initialBalance() {
-    return _StatementItem(
-      id: 'saldo-inicial',
-      key: 'Conta BancoFinTech',
-      keyType: 'Saldo',
-      counterpartyName: 'Saldo inicial',
-      counterpartyBank: 'BancoFinTech',
-      counterpartyDocument: '',
-      amountCentavos: PixRepository.initialBalanceCentavos,
-      direction: 'received',
-      transactionType: 'initial',
-      status: 'concluido',
-      date: DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
-
-  final String id;
-  final String key;
-  final String keyType;
-  final String counterpartyName;
-  final String counterpartyBank;
-  final String counterpartyDocument;
-  final int amountCentavos;
-  final String direction;
-  final String transactionType;
-  final String status;
-  final DateTime date;
-
-  bool get canOpenReceipt => transactionType == 'pix';
-  bool get canShare => transactionType == 'pix';
-  bool get isMoneyIn => direction == 'received' || transactionType == 'initial';
-
-  String get title {
-    if (transactionType == 'initial') return 'Saldo inicial da conta';
-    if (transactionType == 'deposit') return 'Depósito';
-    if (transactionType == 'payment') return 'Pagamento';
-    return direction == 'received'
-        ? 'PIX recebido de $counterpartyName'
-        : 'PIX enviado para $counterpartyName';
-  }
-
-  String get typeLabel {
-    if (transactionType == 'initial') return 'Saldo inicial';
-    if (transactionType == 'deposit') return 'Depósito';
-    if (transactionType == 'payment') return 'Pagamento';
-    return direction == 'received' ? 'PIX recebido' : 'PIX enviado';
-  }
-
-  String get formattedAmount {
-    return BrFormatters.currencyFromCentavos(amountCentavos);
-  }
-
-  String get signedAmount {
-    final signal = isMoneyIn ? '+' : '-';
-    return '$signal $formattedAmount';
-  }
-
-  String get formattedDate {
-    if (transactionType == 'initial') return 'Abertura da conta';
-    return BrFormatters.dateTime(date);
-  }
-
-  String get statusLabel {
-    switch (status) {
-      case 'concluido':
-        return 'Concluído';
-      case 'pendente':
-        return 'Pendente';
-      case 'falhou':
-        return 'Falhou';
-      case 'cancelado':
-        return 'Cancelado/estornado';
-      default:
-        return status;
-    }
-  }
-
-  IconData get icon {
-    if (transactionType == 'initial') return Icons.account_balance_wallet;
-    if (transactionType == 'deposit') return Icons.savings_rounded;
-    if (transactionType == 'payment') return Icons.receipt_rounded;
-    if (status == 'cancelado') return Icons.undo_rounded;
-    return isMoneyIn ? Icons.south_west_rounded : Icons.north_east_rounded;
-  }
-
-  Color get color {
-    if (status == 'cancelado') return AppColors.textSecondary;
-    return isMoneyIn ? AppColors.success : AppColors.error;
-  }
-
-  Color get amountColor {
-    if (status == 'cancelado') return AppColors.textSecondary;
-    return isMoneyIn ? AppColors.success : AppColors.error;
-  }
-
-  PixReceipt toReceipt() {
-    return PixReceipt(
-      id: id,
-      chave: key,
-      tipoChave: keyType,
-      recipientName: counterpartyName,
-      recipientBank: counterpartyBank,
-      recipientDocument: counterpartyDocument,
-      valorCentavos: amountCentavos,
-      direction: direction,
-      transactionType: transactionType,
-      status: status,
-      createdAt: date,
-    );
-  }
-
-  static int _centavosFrom(Map<String, dynamic> data) {
-    final centavos = data['valorCentavos'];
-    if (centavos is int) return centavos;
-    if (centavos is num) return centavos.round();
-
-    final valorAntigo = data['valor'];
-    if (valorAntigo is num) return (valorAntigo * 100).round();
-    return 0;
-  }
-
-  static DateTime _dateFrom(Object? value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return DateTime.now();
-  }
-}
-
-class _ActiveFiltersBanner extends StatelessWidget {
-  const _ActiveFiltersBanner({required this.onClear});
-
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.filter_alt_rounded, color: AppColors.info),
-          const SizedBox(width: 10),
-          const Expanded(child: Text('Filtros aplicados')),
-          TextButton(
-            onPressed: onClear,
-            child: const Text('Limpar'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CenteredState extends StatelessWidget {
-  const _CenteredState({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.action,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 56, color: AppColors.textHint),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            if (action != null) ...[
-              const SizedBox(height: 12),
-              action!,
-            ],
-          ],
-        ),
       ),
     );
   }

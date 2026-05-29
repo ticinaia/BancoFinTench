@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../auth/data/repositories/auth_repository.dart';
+import '../../../../core/services/app_repositories.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -23,7 +22,7 @@ class _SplashPageState extends State<SplashPage>
   void initState() {
     super.initState();
     _setupAnimations();
-    _navigateAfterDelay();
+    _navigateWhenReady();
   }
 
   void _setupAnimations() {
@@ -59,11 +58,8 @@ class _SplashPageState extends State<SplashPage>
     _controller.forward();
   }
 
-  Future<void> _navigateAfterDelay() async {
-    await Future.delayed(AppConstants.splashDuration);
-    if (!mounted) return;
-
-    final authRepository = AuthRepository();
+  Future<void> _navigateWhenReady() async {
+    final authRepository = AppRepositories.auth;
     await authRepository.reloadCurrentUser();
     if (!mounted) return;
 

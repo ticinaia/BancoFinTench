@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../../../core/services/app_repositories.dart';
 
 class EmailVerificationPage extends StatefulWidget {
   const EmailVerificationPage({super.key});
@@ -13,7 +13,7 @@ class EmailVerificationPage extends StatefulWidget {
 }
 
 class _EmailVerificationPageState extends State<EmailVerificationPage> {
-  final _authRepository = AuthRepository();
+  final _authRepository = AppRepositories.auth;
   bool _checking = false;
   bool _sending = false;
 

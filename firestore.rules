@@ -38,6 +38,16 @@ service cloud.firestore {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId);
       }
+
+      match /pix_monthly_summaries/{summaryId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if false;
+      }
+
+      match /pix_daily_summaries/{summaryId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if false;
+      }
     }
   }
 }

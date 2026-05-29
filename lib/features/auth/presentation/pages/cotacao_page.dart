@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:banco_fin_tech/app/theme/app_colors.dart';
-import 'package:banco_fin_tech/features/auth/data/repositories/cotacao_repository.dart';
+import 'package:banco_fin_tech/core/services/app_repositories.dart';
 import 'package:banco_fin_tech/features/auth/domain/models/cotacao.dart';
 
 class CotacaoPage extends StatefulWidget {
@@ -11,7 +11,7 @@ class CotacaoPage extends StatefulWidget {
 }
 
 class _CotacaoPageState extends State<CotacaoPage> {
-  final CotacaoRepository _repository = CotacaoRepository();
+  final _repository = AppRepositories.cotacao;
 
   List<Cotacao> _cotacoes = [];
   bool _isLoading = true;
@@ -31,7 +31,9 @@ class _CotacaoPageState extends State<CotacaoPage> {
     });
 
     try {
-      final cotacoes = await _repository.getCotacoes();
+      final cotacoes = await _repository.getCotacoes(
+        forceRefresh: showFeedback,
+      );
       if (!mounted) return;
 
       setState(() {

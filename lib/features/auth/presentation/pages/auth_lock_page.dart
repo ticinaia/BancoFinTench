@@ -5,8 +5,8 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../../../core/services/app_plugins.dart';
-import '../../data/repositories/auth_repository.dart';
 import '../../data/services/auth_session_service.dart';
 
 class AuthLockPage extends StatefulWidget {
@@ -17,7 +17,7 @@ class AuthLockPage extends StatefulWidget {
 }
 
 class _AuthLockPageState extends State<AuthLockPage> {
-  final _authRepository = AuthRepository();
+  final _authRepository = AppRepositories.auth;
   final _pinController = TextEditingController();
   bool _unlocking = false;
   bool _checkingPin = false;

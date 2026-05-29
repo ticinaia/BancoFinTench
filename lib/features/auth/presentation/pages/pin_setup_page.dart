@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../data/services/auth_session_service.dart';
 
 class PinSetupPage extends StatefulWidget {
@@ -17,7 +17,7 @@ class _PinSetupPageState extends State<PinSetupPage> {
   final _formKey = GlobalKey<FormState>();
   final _pinController = TextEditingController();
   final _confirmPinController = TextEditingController();
-  final _authRepository = AuthRepository();
+  final _authRepository = AppRepositories.auth;
   bool _saving = false;
 
   @override

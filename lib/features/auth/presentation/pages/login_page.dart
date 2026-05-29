@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../domain/validators/br_auth_validators.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authRepository = AuthRepository();
+  final _authRepository = AppRepositories.auth;
 
   bool _isLoading = false;
   bool _handledRouteMessage = false;
@@ -48,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!_authRepository.isAvailable) {
       _showError(
-        'Firebase indisponivel. Confira se Authentication e Firestore foram habilitados no console.',
+        'Firebase indisponível. Confira se Authentication e Firestore foram habilitados no console.',
       );
       return;
     }
@@ -74,7 +74,8 @@ class _LoginPageState extends State<LoginPage> {
       _showError(_firebaseAuthMessage(error));
     } catch (error) {
       if (!mounted) return;
-      _showError('Não foi possível entrar. Verifique sua conexão e tente novamente.');
+      _showError(
+          'Não foi possível entrar. Verifique sua conexão e tente novamente.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

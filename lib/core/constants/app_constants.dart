@@ -4,7 +4,7 @@ class AppConstants {
   static const String appName = 'BancoFinTech';
   static const String appVersion = '1.0.0';
 
-  // Duração da Splash Screen
+  // Duração máxima usada apenas por testes legados e documentação.
   static const Duration splashDuration = Duration(seconds: 3);
   static const Duration sessionTimeout = Duration(minutes: 5);
 
@@ -23,6 +23,6 @@ class AppConstants {
   static const String biometricEnabledKey = 'biometric_enabled';
   static const String appPinKey = 'app_pin';
 
-  // Colecoes do Firestore
+  // Coleções do Firestore
   static const String usersCollection = 'users';
 }

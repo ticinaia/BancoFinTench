@@ -5,8 +5,8 @@ import '../../features/auth/presentation/pages/auth_lock_page.dart';
 import '../../features/auth/presentation/pages/email_verification_page.dart';
 import '../../features/auth/presentation/pages/pin_setup_page.dart';
 import '../../features/auth/presentation/pages/security_page.dart';
-import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/data/services/auth_session_service.dart';
+import '../../core/services/app_repositories.dart';
 
 // Páginas
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_history_page.dart';
@@ -84,7 +84,7 @@ class AppRouter {
 
   static RouteSettings _guard(RouteSettings settings) {
     final routeName = settings.name ?? AppRoutes.splash;
-    final authRepository = AuthRepository();
+    final authRepository = AppRepositories.auth;
     final user = authRepository.currentUser;
 
     const publicRoutes = {

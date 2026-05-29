@@ -1,17 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../../../core/services/app_plugins.dart';
 import '../../../../core/utils/br_formatters.dart';
-import '../../../auth/data/repositories/auth_repository.dart';
 import '../../data/repositories/pix_repository.dart';
 import '../../domain/validators/pix_key_validator.dart';
+import '../utils/pix_payload_parser.dart';
+import '../widgets/pix_transfer_widgets.dart';
 
 class PixTransferPage extends StatefulWidget {
   const PixTransferPage({super.key});
@@ -21,19 +23,28 @@ class PixTransferPage extends StatefulWidget {
 }
 
 class _PixTransferPageState extends State<PixTransferPage> {
+  static final RegExp _nonDigitsRegex = RegExp(r'[^\d]');
+
   final _formKey = GlobalKey<FormState>();
   final _chaveController = TextEditingController();
   final _valorController = TextEditingController();
-  final _pixRepository = PixRepository();
-  final _authRepository = AuthRepository();
+  final _pixRepository = AppRepositories.pix;
+  final _authRepository = AppRepositories.auth;
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _favoritesStream;
 
   String _tipoChave = 'E-mail';
   bool _enviando = false;
   PixRecipient? _recipient;
 
+  @override
+  void initState() {
+    super.initState();
+    _favoritesStream = _pixRepository.watchFavoriteRecipients();
+  }
+
   // Formata o campo de valor como moeda brasileira em tempo real
   void _onValorChanged(String rawText) {
-    final digits = rawText.replaceAll(RegExp(r'[^\d]'), '');
+    final digits = _onlyDigits(rawText);
     if (digits.isEmpty) {
       _valorController.value = const TextEditingValue(text: '');
       return;
@@ -58,7 +69,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
   Future<void> _confirmarPix() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final digits = _valorController.text.replaceAll(RegExp(r'[^\d]'), '');
+    final digits = _onlyDigits(_valorController.text);
     final valorCentavos = int.tryParse(digits) ?? 0;
 
     try {
@@ -92,16 +103,16 @@ class _PixTransferPageState extends State<PixTransferPage> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
-                  _ResumoLinha(
+                  PixResumoLinha(
                     label: 'Valor',
                     value: BrFormatters.currencyFromCentavos(valorCentavos),
                   ),
-                  _ResumoLinha(label: 'Destinatário', value: recipient.name),
-                  _ResumoLinha(label: 'Banco', value: recipient.bank),
-                  _ResumoLinha(label: 'Tipo de chave', value: _tipoChave),
-                  _ResumoLinha(
+                  PixResumoLinha(label: 'Destinatário', value: recipient.name),
+                  PixResumoLinha(label: 'Banco', value: recipient.bank),
+                  PixResumoLinha(label: 'Tipo de chave', value: _tipoChave),
+                  PixResumoLinha(
                       label: 'Chave', value: _chaveController.text.trim()),
-                  _ResumoLinha(
+                  PixResumoLinha(
                     label: 'Data',
                     value: BrFormatters.dateTime(DateTime.now()),
                   ),
@@ -263,7 +274,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
   }
 
   void _applyPixPayload(String payload) {
-    final parsed = _parsePixPayload(payload);
+    final parsed = PixPayloadParser.parse(payload);
     setState(() {
       _tipoChave = parsed.keyType;
       _chaveController.text = parsed.key;
@@ -399,81 +410,8 @@ class _PixTransferPageState extends State<PixTransferPage> {
     }
   }
 
-  _ParsedPixPayload _parsePixPayload(String payload) {
-    final text = payload.trim();
-    final emvPayload = _parseEmvPixPayload(text);
-    if (emvPayload != null) return emvPayload;
-
-    final uri = Uri.tryParse(text);
-    final key = uri?.queryParameters['pixKey'] ??
-        uri?.queryParameters['chave'] ??
-        uri?.queryParameters['key'];
-    final amount = uri?.queryParameters['amount'] ??
-        uri?.queryParameters['valor'] ??
-        uri?.queryParameters['value'];
-
-    if (key != null && key.isNotEmpty) {
-      return _ParsedPixPayload(
-        key: key,
-        keyType: _detectKeyType(key),
-        valorCentavos: amount == null
-            ? null
-            : BrFormatters.parseCurrencyToCentavos(amount),
-      );
-    }
-
-    return _ParsedPixPayload(
-      key: text,
-      keyType: _detectKeyType(text),
-    );
-  }
-
-  _ParsedPixPayload? _parseEmvPixPayload(String payload) {
-    if (!payload.startsWith('000201')) return null;
-
-    final root = _parseTlv(payload);
-    final merchantAccount = root['26'];
-    final key =
-        merchantAccount == null ? null : _parseTlv(merchantAccount)['01'];
-    final amount = root['54'];
-
-    if (key == null || key.isEmpty) return null;
-
-    return _ParsedPixPayload(
-      key: key,
-      keyType: _detectKeyType(key),
-      valorCentavos:
-          amount == null ? null : BrFormatters.parseCurrencyToCentavos(amount),
-    );
-  }
-
-  Map<String, String> _parseTlv(String payload) {
-    final result = <String, String>{};
-    var index = 0;
-
-    while (index + 4 <= payload.length) {
-      final id = payload.substring(index, index + 2);
-      final length = int.tryParse(payload.substring(index + 2, index + 4));
-      if (length == null) break;
-
-      final valueStart = index + 4;
-      final valueEnd = valueStart + length;
-      if (valueEnd > payload.length) break;
-
-      result[id] = payload.substring(valueStart, valueEnd);
-      index = valueEnd;
-    }
-
-    return result;
-  }
-
-  String _detectKeyType(String key) {
-    if (PixKeyValidator.isValid(type: 'E-mail', value: key)) return 'E-mail';
-    if (PixKeyValidator.isValid(type: 'CPF', value: key)) return 'CPF';
-    if (PixKeyValidator.isValid(type: 'Telefone', value: key)) {
-      return 'Telefone';
-    }
-    return 'Aleatória';
+  String _onlyDigits(String value) {
+    return value.replaceAll(_nonDigitsRegex, '');
   }
 
   @override
@@ -529,7 +467,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
               ),
               const SizedBox(height: 12),
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _pixRepository.watchFavoriteRecipients(),
+                stream: _favoritesStream,
                 builder: (context, snapshot) {
                   final favorites = snapshot.data?.docs
                           .map(PixFavoriteRecipient.fromDoc)
@@ -541,7 +479,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: _FavoriteRecipientsStrip(
+                    child: FavoriteRecipientsStrip(
                       favorites: favorites,
                       onSelected: _applyFavoriteRecipient,
                     ),
@@ -595,7 +533,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
               ),
               if (_recipient != null) ...[
                 const SizedBox(height: 12),
-                _RecipientPreview(
+                RecipientPreview(
                   recipient: _recipient!,
                   onSave: _recipient!.isFavorite
                       ? null
@@ -619,7 +557,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                   helperStyle: Theme.of(context).textTheme.labelSmall,
                 ),
                 validator: (value) {
-                  final digits = (value ?? '').replaceAll(RegExp(r'[^\d]'), '');
+                  final digits = _onlyDigits(value ?? '');
                   final centavos = int.tryParse(digits) ?? 0;
                   if (centavos <= 0) return 'Informe um valor válido';
                   if (centavos < 1) return 'Valor mínimo: R\$ 0,01';
@@ -656,171 +594,4 @@ class _PixTransferPageState extends State<PixTransferPage> {
       ),
     );
   }
-}
-
-class _ResumoLinha extends StatelessWidget {
-  const _ResumoLinha({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FavoriteRecipientsStrip extends StatelessWidget {
-  const _FavoriteRecipientsStrip({
-    required this.favorites,
-    required this.onSelected,
-  });
-
-  final List<PixFavoriteRecipient> favorites;
-  final ValueChanged<PixFavoriteRecipient> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 76,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: favorites.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final favorite = favorites[index];
-          return ActionChip(
-            avatar: const Icon(Icons.star_rounded, size: 18),
-            label: SizedBox(
-              width: 118,
-              child: Text(
-                favorite.name,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            onPressed: () => onSelected(favorite),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _RecipientPreview extends StatelessWidget {
-  const _RecipientPreview({
-    required this.recipient,
-    this.onSave,
-  });
-
-  final PixRecipient recipient;
-  final VoidCallback? onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            recipient.isVerified
-                ? Icons.verified_user_outlined
-                : Icons.info_outline_rounded,
-            color:
-                recipient.isVerified ? AppColors.secondary : AppColors.warning,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  recipient.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                Text(
-                  recipient.bank,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  recipient.isFavorite
-                      ? 'Contato frequente'
-                      : recipient.isVerified
-                          ? 'Destinatário verificado'
-                          : 'Chave não verificada. Salve o contato para reutilizar com nome correto.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: recipient.isVerified
-                            ? AppColors.textSecondary
-                            : AppColors.warning,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                if (onSave != null) ...[
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton.icon(
-                      onPressed: onSave,
-                      icon: const Icon(Icons.star_border_rounded),
-                      label: const Text('Salvar contato'),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ParsedPixPayload {
-  const _ParsedPixPayload({
-    required this.key,
-    required this.keyType,
-    this.valorCentavos,
-  });
-
-  final String key;
-  final String keyType;
-  final int? valorCentavos;
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../domain/validators/br_auth_validators.dart';
 
 class CadastroPage extends StatefulWidget {
@@ -21,7 +21,7 @@ class _CadastroPageState extends State<CadastroPage> {
   final _telefoneController = TextEditingController();
   final _senhaController = TextEditingController();
   final _confirmarSenhaController = TextEditingController();
-  final _authRepository = AuthRepository();
+  final _authRepository = AppRepositories.auth;
 
   bool _carregando = false;
   bool _aceitouTermos = false;
@@ -63,14 +63,16 @@ class _CadastroPageState extends State<CadastroPage> {
     } on FirebaseAuthException catch (erro) {
       if (!mounted) return;
       _mostrarErro(_mensagemFirebaseAuth(erro));
-    } on FirebaseException catch (erro) {
+    } on FirebaseException {
       if (!mounted) return;
       _mostrarErro(
         'Serviço temporariamente indisponível. Tente novamente em instantes.',
       );
-    } catch (erro) {
+    } catch (_) {
       if (!mounted) return;
-      _mostrarErro('Não foi possível criar a conta. Tente novamente em instantes.');
+      _mostrarErro(
+        'Não foi possível criar a conta. Tente novamente em instantes.',
+      );
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
@@ -247,7 +249,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     ),
                     validator: (valor) {
                       if (valor != _senhaController.text) {
-                        return 'As senhas nao coincidem';
+                        return 'As senhas não coincidem';
                       }
                       return null;
                     },

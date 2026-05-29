@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -29,7 +31,7 @@ class AuthRepository {
   }) async {
     final auth = _firebaseAuth;
     if (auth == null) {
-      throw StateError('Firebase Auth ainda nao foi inicializado.');
+      throw StateError('Firebase Auth ainda não foi inicializado.');
     }
 
     final credential = await auth.signInWithEmailAndPassword(
@@ -52,7 +54,7 @@ class AuthRepository {
   }) async {
     final auth = _firebaseAuth;
     if (auth == null) {
-      throw StateError('Firebase Auth ainda nao foi inicializado.');
+      throw StateError('Firebase Auth ainda não foi inicializado.');
     }
 
     final credential = await auth.createUserWithEmailAndPassword(
@@ -69,7 +71,7 @@ class AuthRepository {
     try {
       await credential.user?.sendEmailVerification();
     } catch (_) {
-      // A tela de verificacao permite reenviar caso o primeiro envio falhe.
+      // A tela de verificação permite reenviar caso o primeiro envio falhe.
     }
 
     final appUser = await _saveAuthenticatedUser(
@@ -87,7 +89,7 @@ class AuthRepository {
   Future<void> sendPasswordResetEmail(String email) async {
     final auth = _firebaseAuth;
     if (auth == null) {
-      throw StateError('Firebase Auth ainda nao foi inicializado.');
+      throw StateError('Firebase Auth ainda não foi inicializado.');
     }
 
     await auth.sendPasswordResetEmail(email: email);
@@ -96,7 +98,7 @@ class AuthRepository {
   Future<void> sendEmailVerification() async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
     if (!user.emailVerified) {
       await user.sendEmailVerification();
@@ -116,7 +118,7 @@ class AuthRepository {
   Future<void> saveAppPin(String pin) async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
     await AuthSecurityService.savePin(userId: user.uid, pin: pin);
   }
@@ -133,7 +135,7 @@ class AuthRepository {
   }) async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
 
     final valid = await validateAppPin(currentPin);
@@ -157,7 +159,7 @@ class AuthRepository {
   }) async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
 
     await user.updateDisplayName(name);
@@ -172,15 +174,16 @@ class AuthRepository {
     }
   }
 
-  Future<void> updateProfileImage(String profileImageBase64) async {
+  Future<void> updateProfileImageBytes(Uint8List bytes) async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
+
     if (_userRepository.isAvailable) {
       await _userRepository.updateProfileImage(
         id: user.uid,
-        profileImageBase64: profileImageBase64,
+        profileImageBase64: base64Encode(bytes),
       );
     }
   }
@@ -188,7 +191,7 @@ class AuthRepository {
   Future<void> requestEmailChange(String newEmail) async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
     await user.verifyBeforeUpdateEmail(newEmail);
   }
@@ -196,7 +199,7 @@ class AuthRepository {
   Future<void> sendPasswordResetForCurrentUser() async {
     final email = currentUser?.email;
     if (email == null || email.isEmpty) {
-      throw StateError('Usuario sem e-mail cadastrado.');
+      throw StateError('Usuário sem e-mail cadastrado.');
     }
     await sendPasswordResetEmail(email);
   }
@@ -204,7 +207,7 @@ class AuthRepository {
   Future<void> deleteCurrentAccount() async {
     final user = currentUser;
     if (user == null) {
-      throw StateError('Usuario nao autenticado.');
+      throw StateError('Usuário não autenticado.');
     }
     await AuthSecurityService.clearPin(user.uid);
     await user.delete();
@@ -221,7 +224,7 @@ class AuthRepository {
   }) async {
     final firebaseUser = credential.user;
     if (firebaseUser == null) {
-      throw StateError('Nao foi possivel obter o usuario autenticado.');
+      throw StateError('Não foi possível obter o usuário autenticado.');
     }
 
     final now = DateTime.now();
@@ -240,7 +243,7 @@ class AuthRepository {
       try {
         await _userRepository.createOrUpdate(appUser);
       } catch (_) {
-        // A autenticacao ja foi concluida. O perfil pode ser sincronizado depois.
+        // A autenticação já foi concluída. O perfil pode ser sincronizado depois.
       }
     }
 
@@ -263,7 +266,7 @@ class AuthRepository {
         platform: defaultTargetPlatform.name,
       );
     } catch (_) {
-      // Logs nao devem bloquear a autenticacao.
+      // Logs não devem bloquear a autenticação.
     }
   }
 

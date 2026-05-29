@@ -5,9 +5,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
+import '../../../../core/services/app_repositories.dart';
 import '../../../../core/utils/br_formatters.dart';
-import '../../../auth/data/repositories/auth_repository.dart';
-import '../../data/repositories/pix_repository.dart';
 
 class PixReceivePage extends StatefulWidget {
   const PixReceivePage({super.key});
@@ -19,8 +18,8 @@ class PixReceivePage extends StatefulWidget {
 class _PixReceivePageState extends State<PixReceivePage> {
   final _formKey = GlobalKey<FormState>();
   final _valorController = TextEditingController();
-  final _pixRepository = PixRepository();
-  final _authRepository = AuthRepository();
+  final _pixRepository = AppRepositories.pix;
+  final _authRepository = AppRepositories.auth;
 
   bool _simulando = false;
 
