@@ -183,6 +183,7 @@ class PixRepository {
         'recipientDocument': recipient.document,
         'valorCentavos': valorCentavos,
         'direction': 'sent',
+        'transactionType': 'pix',
         'status': 'concluido',
         'data': FieldValue.serverTimestamp(),
         'createdAt': now,
@@ -197,6 +198,69 @@ class PixRepository {
       recipientBank: recipient.bank,
       recipientDocument: recipient.document,
       valorCentavos: valorCentavos,
+      direction: 'sent',
+      transactionType: 'pix',
+      status: 'concluido',
+      createdAt: now,
+    );
+  }
+
+  Future<PixReceipt> receberPix({
+    required String chave,
+    required String tipoChave,
+    required int valorCentavos,
+    required String payerName,
+    required String payerBank,
+  }) async {
+    if (!isAvailable) {
+      throw StateError('Pix indisponivel neste ambiente.');
+    }
+
+    if (valorCentavos <= 0) {
+      throw StateError('Informe um valor valido.');
+    }
+
+    final now = DateTime.now();
+    final docRef = _pixCollection.doc();
+
+    await _firestore!.runTransaction((transaction) async {
+      final userSnapshot = await transaction.get(_userDoc);
+      final balance = _balanceFrom(userSnapshot.data());
+
+      transaction.set(
+        _userDoc,
+        {
+          'balanceCentavos': balance + valorCentavos,
+          'updatedAt': now,
+        },
+        SetOptions(merge: true),
+      );
+
+      transaction.set(docRef, {
+        'chave': chave,
+        'tipoChave': tipoChave,
+        'recipientName': payerName,
+        'recipientBank': payerBank,
+        'recipientDocument': 'Pagador simulado',
+        'valorCentavos': valorCentavos,
+        'direction': 'received',
+        'transactionType': 'pix',
+        'status': 'concluido',
+        'data': FieldValue.serverTimestamp(),
+        'createdAt': now,
+      });
+    });
+
+    return PixReceipt(
+      id: docRef.id,
+      chave: chave,
+      tipoChave: tipoChave,
+      recipientName: payerName,
+      recipientBank: payerBank,
+      recipientDocument: 'Pagador simulado',
+      valorCentavos: valorCentavos,
+      direction: 'received',
+      transactionType: 'pix',
       status: 'concluido',
       createdAt: now,
     );
@@ -297,6 +361,8 @@ class PixReceipt {
     required this.recipientBank,
     required this.recipientDocument,
     required this.valorCentavos,
+    this.direction = 'sent',
+    this.transactionType = 'pix',
     required this.status,
     required this.createdAt,
   });
@@ -308,6 +374,8 @@ class PixReceipt {
   final String recipientBank;
   final String recipientDocument;
   final int valorCentavos;
+  final String direction;
+  final String transactionType;
   final String status;
   final DateTime createdAt;
 
@@ -320,6 +388,8 @@ class PixReceipt {
       'recipientBank': recipientBank,
       'recipientDocument': recipientDocument,
       'valorCentavos': valorCentavos,
+      'direction': direction,
+      'transactionType': transactionType,
       'status': status,
       'createdAt': createdAt,
     };
@@ -336,6 +406,8 @@ class PixReceipt {
       recipientBank: map['recipientBank'].toString(),
       recipientDocument: map['recipientDocument'].toString(),
       valorCentavos: PixRepository._intFrom(map['valorCentavos']),
+      direction: map['direction'] as String? ?? 'sent',
+      transactionType: map['transactionType'] as String? ?? 'pix',
       status: map['status'].toString(),
       createdAt: date is DateTime ? date : DateTime.now(),
     );

@@ -22,6 +22,13 @@ class BrFormatters {
     return '$day/$month/$year $hour:$minute';
   }
 
+  static String date(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day/$month/$year';
+  }
+
   static String _formatThousands(int value) {
     final digits = value.toString();
     final buffer = StringBuffer();

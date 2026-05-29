@@ -155,6 +155,19 @@ class AuthRepository {
     }
   }
 
+  Future<void> updateProfileImage(String profileImageBase64) async {
+    final user = currentUser;
+    if (user == null) {
+      throw StateError('Usuario nao autenticado.');
+    }
+    if (_userRepository.isAvailable) {
+      await _userRepository.updateProfileImage(
+        id: user.uid,
+        profileImageBase64: profileImageBase64,
+      );
+    }
+  }
+
   Future<void> requestEmailChange(String newEmail) async {
     final user = currentUser;
     if (user == null) {

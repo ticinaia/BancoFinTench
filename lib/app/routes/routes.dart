@@ -11,6 +11,7 @@ import '../../features/auth/data/services/auth_session_service.dart';
 // Páginas
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_history_page.dart';
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_qr_scanner_page.dart';
+import 'package:banco_fin_tech/features/pix/presentation/pages/pix_receive_page.dart';
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_receipt_page.dart';
 import 'package:banco_fin_tech/features/pix/presentation/pages/pix_transfer_page.dart';
 import 'package:banco_fin_tech/features/splash/presentation/pages/splash_page.dart';
@@ -57,6 +58,9 @@ class AppRouter {
 
       case AppRoutes.pixTransfer:
         return _buildRoute(const PixTransferPage(), settings);
+
+      case AppRoutes.pixReceive:
+        return _buildRoute(const PixReceivePage(), settings);
 
       case AppRoutes.pixHistory:
         return _buildRoute(const PixHistoryPage(), settings);

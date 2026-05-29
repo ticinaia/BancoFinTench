@@ -33,6 +33,9 @@ class UserRepository {
 
       if (user.cpf != null) data['cpf'] = user.cpf;
       if (user.phone != null) data['phone'] = user.phone;
+      if (user.profileImageBase64 != null) {
+        data['profileImageBase64'] = user.profileImageBase64;
+      }
 
       await docRef.update(data);
       return;
@@ -52,6 +55,19 @@ class UserRepository {
         'name': name,
         'cpf': cpf,
         'phone': phone,
+        'updatedAt': DateTime.now(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<void> updateProfileImage({
+    required String id,
+    required String profileImageBase64,
+  }) async {
+    await _users.doc(id).set(
+      {
+        'profileImageBase64': profileImageBase64,
         'updatedAt': DateTime.now(),
       },
       SetOptions(merge: true),

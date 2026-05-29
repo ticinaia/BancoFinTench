@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/theme/app_colors.dart';
@@ -28,6 +29,8 @@ class PixReceiptPage extends StatelessWidget {
         recipientBank: 'Banco não informado',
         recipientDocument: 'Documento não informado',
         valorCentavos: 0,
+        direction: 'sent',
+        transactionType: 'pix',
         status: 'concluido',
         createdAt: DateTime.now(),
       ),
@@ -40,12 +43,21 @@ class PixReceiptPage extends StatelessWidget {
     Share.share(_shareText());
   }
 
+  Future<void> _copyCode(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: receipt.id));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Código da transação copiado.')),
+    );
+  }
+
   String _shareText() {
     return '''
 Comprovante PIX
 
 Valor: ${BrFormatters.currencyFromCentavos(receipt.valorCentavos)}
-Destinatário: ${receipt.recipientName}
+Tipo: ${_receiptTypeLabel(receipt)}
+${receipt.direction == 'received' ? 'Pagador' : 'Destinatário'}: ${receipt.recipientName}
 Banco: ${receipt.recipientBank}
 Documento: ${receipt.recipientDocument}
 Tipo de chave: ${receipt.tipoChave}
@@ -67,6 +79,12 @@ Código: ${receipt.id}
       default:
         return status;
     }
+  }
+
+  static String _receiptTypeLabel(PixReceipt receipt) {
+    if (receipt.transactionType == 'deposit') return 'Depósito';
+    if (receipt.transactionType == 'payment') return 'Pagamento';
+    return receipt.direction == 'received' ? 'PIX recebido' : 'PIX enviado';
   }
 
   @override
@@ -110,7 +128,7 @@ Código: ${receipt.id}
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'PIX ${_statusLabel(receipt.status).toLowerCase()}',
+                    '${_receiptTypeLabel(receipt)} ${_statusLabel(receipt.status).toLowerCase()}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.72),
                         ),
@@ -119,7 +137,12 @@ Código: ${receipt.id}
               ),
             ),
             const SizedBox(height: 20),
-            _ReceiptLine(label: 'Destinatário', value: receipt.recipientName),
+            _ReceiptLine(
+              label: receipt.direction == 'received'
+                  ? 'Pagador'
+                  : 'Destinatário',
+              value: receipt.recipientName,
+            ),
             _ReceiptLine(label: 'Banco', value: receipt.recipientBank),
             _ReceiptLine(label: 'Documento', value: receipt.recipientDocument),
             _ReceiptLine(label: 'Tipo de chave', value: receipt.tipoChave),
@@ -132,6 +155,12 @@ Código: ${receipt.id}
               onPressed: _share,
               icon: const Icon(Icons.ios_share_rounded),
               label: const Text('Compartilhar comprovante'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => _copyCode(context),
+              icon: const Icon(Icons.copy_rounded),
+              label: const Text('Copiar código da transação'),
             ),
           ],
         ),

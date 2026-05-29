@@ -9,6 +9,7 @@ class AppUser {
     required this.name,
     this.cpf,
     this.phone,
+    this.profileImageBase64,
     this.termsAcceptedAt,
     this.balanceCentavos = AppConstants.initialBalanceCentavos,
     required this.createdAt,
@@ -20,6 +21,7 @@ class AppUser {
   final String name;
   final String? cpf;
   final String? phone;
+  final String? profileImageBase64;
   final DateTime? termsAcceptedAt;
   final int balanceCentavos;
   final DateTime createdAt;
@@ -31,6 +33,7 @@ class AppUser {
       'name': name,
       'cpf': cpf,
       'phone': phone,
+      'profileImageBase64': profileImageBase64,
       'termsAcceptedAt': termsAcceptedAt,
       'balanceCentavos': balanceCentavos,
       'createdAt': createdAt,
@@ -45,6 +48,7 @@ class AppUser {
       name: map['name'] as String? ?? '',
       cpf: map['cpf'] as String?,
       phone: map['phone'] as String?,
+      profileImageBase64: map['profileImageBase64'] as String?,
       termsAcceptedAt: _optionalDateFrom(map['termsAcceptedAt']),
       balanceCentavos: _intFrom(
         map['balanceCentavos'],

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +103,8 @@ class _HomePageState extends State<HomePage> {
     try {
       final imagem = await AppPlugins.imagePicker.pickImage(
         source: source,
+        maxWidth: 512,
+        maxHeight: 512,
         imageQuality: 75,
       );
 
@@ -114,6 +118,9 @@ class _HomePageState extends State<HomePage> {
         _imagemPerfilBytes = bytes;
       });
 
+      await _authRepository.updateProfileImage(base64Encode(bytes));
+
+      if (!mounted) return;
       _mostrarMensagem('Imagem de perfil atualizada.');
     } catch (_) {
       if (mounted) {
@@ -227,6 +234,8 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
               accountData?['balanceCentavos'],
               fallback: PixRepository.initialBalanceCentavos,
             );
+            final profileImageBytes = _imagemPerfilBytes ??
+                _decodeProfileImage(accountData?['profileImageBase64']);
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -238,10 +247,10 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
                       child: CircleAvatar(
                         radius: 30,
                         backgroundColor: AppColors.primary,
-                        backgroundImage: _imagemPerfilBytes != null
-                            ? MemoryImage(_imagemPerfilBytes!)
+                        backgroundImage: profileImageBytes != null
+                            ? MemoryImage(profileImageBytes)
                             : null,
-                        child: _imagemPerfilBytes == null
+                        child: profileImageBytes == null
                             ? const Icon(
                                 Icons.person_rounded,
                                 color: Colors.white,
@@ -354,6 +363,15 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
                       ),
                     ),
                     _ActionTile(
+                      icon: Icons.qr_code_2_rounded,
+                      label: 'Receber PIX',
+                      color: AppColors.success,
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.pixReceive,
+                      ),
+                    ),
+                    _ActionTile(
                       icon: Icons.receipt_long_rounded,
                       label: 'Histórico',
                       color: AppColors.info,
@@ -389,6 +407,15 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
     if (value is int) return value;
     if (value is num) return value.round();
     return fallback;
+  }
+
+  Uint8List? _decodeProfileImage(Object? value) {
+    if (value is! String || value.isEmpty) return null;
+    try {
+      return base64Decode(value);
+    } catch (_) {
+      return null;
+    }
   }
 }
 
