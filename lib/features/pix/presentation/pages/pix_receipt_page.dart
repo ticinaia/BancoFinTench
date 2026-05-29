@@ -26,7 +26,7 @@ class PixReceiptPage extends StatelessWidget {
       receipt: PixReceipt(
         id: 'indisponivel',
         chave: 'Chave não informada',
-        tipoChave: 'PIX',
+        tipoChave: 'Pix',
         recipientName: 'Destinatário',
         recipientBank: 'Banco não informado',
         recipientDocument: 'Documento não informado',
@@ -56,7 +56,7 @@ class PixReceiptPage extends StatelessWidget {
 
   String _shareText() {
     return '''
-Comprovante PIX
+Comprovante Pix
 
 Valor: ${BrFormatters.currencyFromCentavos(receipt.valorCentavos)}
 Tipo: ${_receiptTypeLabel(receipt)}
@@ -87,14 +87,14 @@ Código: ${receipt.id}
   static String _receiptTypeLabel(PixReceipt receipt) {
     if (receipt.transactionType == 'deposit') return 'Depósito';
     if (receipt.transactionType == 'payment') return 'Pagamento';
-    return receipt.direction == 'received' ? 'PIX recebido' : 'PIX enviado';
+    return receipt.direction == 'received' ? 'Pix recebido' : 'Pix enviado';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Comprovante PIX'),
+        title: const Text('Comprovante Pix'),
         actions: [
           IconButton(
             onPressed: _share,
@@ -181,8 +181,8 @@ Código: ${receipt.id}
               icon: const Icon(Icons.pix_rounded),
               label: Text(
                 receipt.direction == 'received'
-                    ? 'Receber outro PIX'
-                    : 'Enviar novo PIX',
+                    ? 'Receber outro Pix'
+                    : 'Enviar novo Pix',
               ),
             ),
             const SizedBox(height: 12),

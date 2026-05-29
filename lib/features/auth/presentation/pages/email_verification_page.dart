@@ -33,7 +33,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         return;
       }
 
-      _showMessage('Ainda não encontramos a confirmação desse e-mail.');
+      _showMessage(
+          'Ainda não encontramos a confirmação. Confira sua caixa de entrada.');
     } finally {
       if (mounted) setState(() => _checking = false);
     }
@@ -45,13 +46,14 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     try {
       await _authRepository.sendEmailVerification();
       if (!mounted) return;
-      _showMessage('Enviamos um novo e-mail de confirmação.');
+      _showMessage('Enviamos um novo e-mail de confirmação para você.');
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
-      _showMessage('Não foi possível reenviar (${error.code}).');
+      _showMessage('Não conseguimos reenviar agora (${error.code}).');
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível reenviar agora.');
+      _showMessage(
+          'Não conseguimos reenviar agora. Tente novamente em instantes.');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -110,7 +112,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enviamos uma confirmação para $email. Depois de confirmar, volte aqui para liberar sua conta.',
+              'Enviamos uma mensagem para $email. Depois de confirmar, volte aqui para liberar sua conta.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),

@@ -14,8 +14,8 @@ class _CotacaoPageState extends State<CotacaoPage> {
   final _repository = AppRepositories.cotacao;
 
   List<Cotacao> _cotacoes = [];
-  bool _isLoading = true;
-  String? _errorMessage;
+  bool _carregando = true;
+  String? _mensagemErro;
 
   @override
   void initState() {
@@ -26,8 +26,8 @@ class _CotacaoPageState extends State<CotacaoPage> {
   Future<void> _carregarCotacoes({bool showFeedback = false}) async {
     if (!mounted) return;
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _carregando = true;
+      _mensagemErro = null;
     });
 
     try {
@@ -38,13 +38,13 @@ class _CotacaoPageState extends State<CotacaoPage> {
 
       setState(() {
         _cotacoes = cotacoes;
-        _isLoading = false;
+        _carregando = false;
       });
 
       if (showFeedback) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Consulta realizada.'),
+            content: Text('Cotações atualizadas.'),
           ),
         );
       }
@@ -52,14 +52,14 @@ class _CotacaoPageState extends State<CotacaoPage> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
+        _mensagemErro = e.toString().replaceAll('Exception: ', '');
+        _carregando = false;
       });
 
       if (showFeedback && _cotacoes.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_errorMessage!),
+            content: Text(_mensagemErro!),
           ),
         );
       }
@@ -70,10 +70,10 @@ class _CotacaoPageState extends State<CotacaoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cotações de Moedas'),
+        title: const Text('Cotações'),
         actions: [
           IconButton(
-            icon: _isLoading
+            icon: _carregando
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -81,8 +81,9 @@ class _CotacaoPageState extends State<CotacaoPage> {
                   )
                 : const Icon(Icons.refresh),
             tooltip: 'Atualizar',
-            onPressed:
-                _isLoading ? null : () => _carregarCotacoes(showFeedback: true),
+            onPressed: _carregando
+                ? null
+                : () => _carregarCotacoes(showFeedback: true),
           ),
         ],
       ),
@@ -105,20 +106,20 @@ class _CotacaoPageState extends State<CotacaoPage> {
     const negativeLight = Color(0xFFC62828);
     const negativeDark = Color(0xFFFF8A94);
 
-    if (_isLoading && _cotacoes.isEmpty) {
+    if (_carregando && _cotacoes.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Buscando cotações mais recentes...'),
+            Text('Buscando as cotações mais recentes...'),
           ],
         ),
       );
     }
 
-    if (_errorMessage != null && _cotacoes.isEmpty) {
+    if (_mensagemErro != null && _cotacoes.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -132,12 +133,12 @@ class _CotacaoPageState extends State<CotacaoPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Ops! Algo deu errado.',
+                'Não conseguimos carregar as cotações.',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                _errorMessage!,
+                _mensagemErro!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -145,7 +146,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
               ElevatedButton.icon(
                 onPressed: _carregarCotacoes,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Tentar Novamente'),
+                label: const Text('Tentar novamente'),
               ),
             ],
           ),
@@ -163,7 +164,7 @@ class _CotacaoPageState extends State<CotacaoPage> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                'Última atualização da API: ${_formatarHorario(_ultimaAtualizacaoApi())}',
+                'Atualizado pela API às ${_formatarHorario(_ultimaAtualizacaoApi())}',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: textSecondary,

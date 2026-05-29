@@ -61,7 +61,7 @@ class PixStatementTile extends StatelessWidget {
         trailing: item.status == 'pendente'
             ? IconButton(
                 icon: const Icon(Icons.cancel_outlined),
-                tooltip: 'Cancelar PIX',
+                tooltip: 'Cancelar Pix',
                 onPressed: onCancel,
               )
             : item.canShare

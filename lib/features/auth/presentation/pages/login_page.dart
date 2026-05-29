@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _authRepository = AppRepositories.auth;
 
-  bool _isLoading = false;
+  bool _entrando = false;
   bool _handledRouteMessage = false;
 
   @override
@@ -48,12 +48,12 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!_authRepository.isAvailable) {
       _showError(
-        'Firebase indisponível. Confira se Authentication e Firestore foram habilitados no console.',
+        'Não conseguimos conectar ao serviço de login agora. Tente novamente em instantes.',
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _entrando = true);
 
     try {
       await _authRepository.signIn(
@@ -72,13 +72,14 @@ class _LoginPageState extends State<LoginPage> {
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
       _showError(_firebaseAuthMessage(error));
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       _showError(
-          'Não foi possível entrar. Verifique sua conexão e tente novamente.');
+        'Não conseguimos entrar. Verifique sua conexão e tente novamente.',
+      );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _entrando = false);
       }
     }
   }
@@ -100,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
       case 'user-disabled':
         return 'Esta conta foi suspensa. Entre em contato com o suporte.';
       default:
-        return 'Não foi possível entrar. Tente novamente em instantes.';
+        return 'Não conseguimos entrar agora. Tente novamente em instantes.';
     }
   }
 
@@ -149,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (email == null || email.isEmpty) return;
     if (!BrAuthValidators.isValidEmail(email)) {
-      _showError('Informe um e-mail válido terminado em .com ou .com.br.');
+      _showError('Digite um e-mail válido para recuperar sua senha.');
       return;
     }
 
@@ -162,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
       _showError(_firebaseAuthMessage(error));
     } catch (_) {
       if (!mounted) return;
-      _showError('Não foi possível enviar o e-mail de recuperação.');
+      _showError('Não conseguimos enviar o e-mail de recuperação agora.');
     }
   }
 
@@ -204,7 +205,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Entre para acompanhar seu saldo, Pix e cotações em um só lugar.',
+              'Acesse sua conta para acompanhar saldo, Pix e cotações em um só lugar.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -226,7 +227,7 @@ class _LoginPageState extends State<LoginPage> {
                         return 'Informe seu e-mail';
                       }
                       if (!BrAuthValidators.isValidEmail(value)) {
-                        return 'Use um e-mail válido com @ e .com';
+                        return 'Digite um e-mail válido';
                       }
                       return null;
                     },
@@ -258,15 +259,15 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _isLoading ? null : _login,
-              icon: _isLoading
+              onPressed: _entrando ? null : _login,
+              icon: _entrando
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.login),
-              label: Text(_isLoading ? 'Entrando...' : 'Entrar'),
+              label: Text(_entrando ? 'Entrando...' : 'Entrar'),
             ),
             const SizedBox(height: 20),
             Wrap(

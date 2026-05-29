@@ -75,10 +75,10 @@ class _SecurityPageState extends State<SecurityPage> {
         phone: BrAuthValidators.onlyDigits(_phoneController.text),
       );
       if (!mounted) return;
-      _showMessage('Dados atualizados.');
+      _showMessage('Seus dados foram atualizados.');
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível atualizar seus dados.');
+      _showMessage('Não conseguimos atualizar seus dados agora.');
     } finally {
       if (mounted) setState(() => _savingProfile = false);
     }
@@ -90,10 +90,10 @@ class _SecurityPageState extends State<SecurityPage> {
     try {
       await _authRepository.sendPasswordResetForCurrentUser();
       if (!mounted) return;
-      _showMessage('Enviamos um link para alterar sua senha.');
+      _showMessage('Enviamos um link para você alterar sua senha.');
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível enviar o link de senha.');
+      _showMessage('Não conseguimos enviar o link de senha agora.');
     } finally {
       if (mounted) setState(() => _sendingPassword = false);
     }
@@ -202,13 +202,13 @@ class _SecurityPageState extends State<SecurityPage> {
         newPin: payload.newPin,
       );
       if (!mounted) return;
-      _showMessage('PIN atualizado.');
+      _showMessage('Seu PIN foi atualizado.');
     } on StateError catch (error) {
       if (!mounted) return;
       _showMessage(error.message);
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível trocar o PIN.');
+      _showMessage('Não conseguimos trocar o PIN agora.');
     } finally {
       if (mounted) setState(() => _changingPin = false);
     }
@@ -226,7 +226,7 @@ class _SecurityPageState extends State<SecurityPage> {
   Future<void> _requestEmailChange() async {
     final newEmail = _emailController.text.trim();
     if (!BrAuthValidators.isValidEmail(newEmail)) {
-      _showMessage('Informe um e-mail válido terminado em .com ou .com.br.');
+      _showMessage('Digite um e-mail válido para solicitar a troca.');
       return;
     }
     if (!await _confirmPin()) return;
@@ -243,7 +243,7 @@ class _SecurityPageState extends State<SecurityPage> {
       _showMessage(_authErrorMessage(error));
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível solicitar a troca de e-mail.');
+      _showMessage('Não conseguimos solicitar a troca de e-mail agora.');
     } finally {
       if (mounted) setState(() => _sendingEmail = false);
     }
@@ -291,7 +291,7 @@ class _SecurityPageState extends State<SecurityPage> {
       _showMessage(_authErrorMessage(error));
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível excluir a conta.');
+      _showMessage('Não conseguimos excluir a conta agora.');
     } finally {
       if (mounted) setState(() => _deleting = false);
     }
@@ -307,7 +307,7 @@ class _SecurityPageState extends State<SecurityPage> {
     if (error.code == 'invalid-email') {
       return 'Informe um e-mail válido.';
     }
-    return 'Erro no Firebase Auth (${error.code}).';
+    return 'Não conseguimos concluir essa alteração (${error.code}).';
   }
 
   Future<bool> _confirmPin() async {
@@ -354,7 +354,7 @@ class _SecurityPageState extends State<SecurityPage> {
 
     final valid = await _authRepository.validateAppPin(pin);
     if (!mounted) return false;
-    if (!valid && mounted) _showMessage('PIN incorreto.');
+    if (!valid && mounted) _showMessage('Esse PIN não confere.');
     return valid;
   }
 
@@ -520,7 +520,7 @@ class _SecurityPageState extends State<SecurityPage> {
                   ),
                   const SizedBox(height: 28),
                   Text(
-                    'Zona sensível',
+                    'Área sensível',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),

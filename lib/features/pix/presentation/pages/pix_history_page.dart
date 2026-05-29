@@ -51,7 +51,7 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
       await _pixRepository.cancelPendingPix(id);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIX pendente cancelado.')),
+        const SnackBar(content: Text('Pix pendente cancelado.')),
       );
     } on StateError catch (error) {
       if (!context.mounted) return;
@@ -61,7 +61,7 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível cancelar o PIX.')),
+        const SnackBar(content: Text('Não conseguimos cancelar o Pix agora.')),
       );
     }
   }
@@ -76,14 +76,12 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
     final minController = TextEditingController(
       text: _minCentavos == null
           ? ''
-          : BrFormatters.currencyFromCentavos(_minCentavos!)
-              .replaceAll('R\$ ', ''),
+          : BrFormatters.currencyInputFromCentavos(_minCentavos!),
     );
     final maxController = TextEditingController(
       text: _maxCentavos == null
           ? ''
-          : BrFormatters.currencyFromCentavos(_maxCentavos!)
-              .replaceAll('R\$ ', ''),
+          : BrFormatters.currencyInputFromCentavos(_maxCentavos!),
     );
     var selectedType = _typeFilter;
     var selectedStart = _startDate;

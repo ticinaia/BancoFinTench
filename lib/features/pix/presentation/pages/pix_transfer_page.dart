@@ -42,7 +42,6 @@ class _PixTransferPageState extends State<PixTransferPage> {
     _favoritesStream = _pixRepository.watchFavoriteRecipients();
   }
 
-  // Formata o campo de valor como moeda brasileira em tempo real
   void _onValorChanged(String rawText) {
     final digits = _onlyDigits(rawText);
     if (digits.isEmpty) {
@@ -50,9 +49,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       return;
     }
     final centavos = int.tryParse(digits) ?? 0;
-    final formatted = BrFormatters.currencyFromCentavos(centavos)
-        .replaceAll('R\$\u00a0', '')
-        .trim();
+    final formatted = BrFormatters.currencyInputFromCentavos(centavos);
     _valorController.value = TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
@@ -75,7 +72,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     try {
       final saldo = await _pixRepository.getBalanceCentavos();
       if (valorCentavos > saldo) {
-        _mostrarMensagem('Seu saldo não cobre esse PIX. Confira o valor.');
+        _mostrarMensagem('Seu saldo não cobre esse Pix. Confira o valor.');
         return;
       }
 
@@ -100,7 +97,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Confirmar PIX',
+                    'Confirmar Pix',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
@@ -121,7 +118,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                   ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context, true),
                     icon: const Icon(Icons.fingerprint),
-                    label: const Text('Enviar PIX'),
+                    label: const Text('Enviar Pix'),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
@@ -143,7 +140,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       _mostrarMensagem(error.message);
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não conseguimos conferir os dados do PIX agora.');
+      _mostrarMensagem('Não conseguimos conferir os dados do Pix agora.');
     }
   }
 
@@ -166,7 +163,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       );
 
       if (!mounted) return;
-      _mostrarMensagem('PIX enviado com sucesso. Comprovante gerado.');
+      _mostrarMensagem('Pix enviado. O comprovante já está disponível.');
       Navigator.pushReplacementNamed(
         context,
         AppRoutes.pixReceipt,
@@ -177,7 +174,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       _mostrarMensagem(error.message);
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível enviar o PIX. Tente novamente.');
+      _mostrarMensagem('Não conseguimos enviar o Pix agora. Tente novamente.');
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -195,7 +192,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       }
 
       final autenticado = await AppPlugins.localAuth.authenticate(
-        localizedReason: 'Confirme sua identidade para enviar o PIX',
+        localizedReason: 'Confirme sua identidade para enviar o Pix',
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
@@ -263,7 +260,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text?.trim();
     if (text == null || text.isEmpty) {
-      _mostrarMensagem('Não encontrei um código PIX na área de transferência.');
+      _mostrarMensagem('Não encontrei um código Pix na área de transferência.');
       return;
     }
     _applyPixPayload(text);
@@ -285,10 +282,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
       _chaveController.text = parsed.key;
       _recipient = null;
       if (parsedValue != null && parsedValue > 0) {
-        final formatted = BrFormatters.currencyFromCentavos(parsedValue)
-            .replaceAll('R\$ ', '')
-            .replaceAll('R\$ ', '')
-            .trim();
+        final formatted = BrFormatters.currencyInputFromCentavos(parsedValue);
         _valorController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -300,7 +294,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
     final valueMessage = parsedValue != null && parsedValue > 0
         ? 'Valor: ${BrFormatters.currencyFromCentavos(parsedValue)}.'
         : 'Este código não trouxe valor. Informe o valor para continuar.';
-    _mostrarMensagem('Código PIX lido. Chave: ${parsed.key}. $valueMessage');
+    _mostrarMensagem('Código Pix lido. Chave: ${parsed.key}. $valueMessage');
   }
 
   void _applyFavoriteRecipient(PixFavoriteRecipient favorite) {
@@ -315,10 +309,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
 
   void _preencherSimulacao() {
     const centavos = 12550;
-    final formatted = BrFormatters.currencyFromCentavos(centavos)
-        .replaceAll('R\$\u00a0', '')
-        .replaceAll('R\$ ', '')
-        .trim();
+    final formatted = BrFormatters.currencyInputFromCentavos(centavos);
 
     setState(() {
       _tipoChave = 'E-mail';
@@ -329,14 +320,14 @@ class _PixTransferPageState extends State<PixTransferPage> {
       );
       _recipient = const PixRecipient(
         name: 'Maria Silva',
-        bank: 'Banco simulado',
+        bank: 'Banco de demonstração',
         key: 'maria.silva@pix.com',
         keyType: 'E-mail',
-        document: 'Simulação PIX',
+        document: 'Simulação Pix',
         isFavorite: true,
       );
     });
-    _mostrarMensagem('Transferência simulada preenchida.');
+    _mostrarMensagem('Preenchi uma transferência de demonstração.');
   }
 
   Future<void> _saveRecipientAsFavorite(PixRecipient recipient) async {
@@ -368,7 +359,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Salvar contato PIX',
+                    'Salvar contato Pix',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
@@ -440,10 +431,10 @@ class _PixTransferPageState extends State<PixTransferPage> {
       await _pixRepository.saveFavoriteRecipient(saved);
       if (!mounted) return;
       setState(() => _recipient = saved);
-      _mostrarMensagem('Contato PIX salvo.');
+      _mostrarMensagem('Contato Pix salvo.');
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível salvar o contato.');
+      _mostrarMensagem('Não conseguimos salvar o contato agora.');
     }
   }
 
@@ -455,7 +446,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transferência PIX'),
+        title: const Text('Transferência Pix'),
       ),
       bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
       body: SafeArea(
@@ -480,7 +471,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Enviar PIX',
+                      'Enviar Pix',
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 color: Colors.white,
@@ -489,7 +480,7 @@ class _PixTransferPageState extends State<PixTransferPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Confira os dados antes de confirmar.',
+                      'Confira os dados com calma antes de confirmar.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withValues(alpha: 0.72),
                           ),
@@ -553,12 +544,12 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 controller: _chaveController,
                 onChanged: (_) => setState(() => _recipient = null),
                 decoration: const InputDecoration(
-                  labelText: 'Chave PIX',
+                  labelText: 'Chave Pix',
                   prefixIcon: Icon(Icons.alternate_email_rounded),
                 ),
                 validator: (value) {
                   final text = value?.trim() ?? '';
-                  if (text.isEmpty) return 'Informe a chave PIX';
+                  if (text.isEmpty) return 'Informe a chave Pix';
                   if (!PixKeyValidator.isValid(
                     type: _tipoChave,
                     value: text,
@@ -611,13 +602,13 @@ class _PixTransferPageState extends State<PixTransferPage> {
               OutlinedButton.icon(
                 onPressed: _colarCodigoPix,
                 icon: const Icon(Icons.content_paste_rounded),
-                label: const Text('Colar código PIX'),
+                label: const Text('Colar código Pix'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: _preencherSimulacao,
                 icon: const Icon(Icons.auto_fix_high_rounded),
-                label: const Text('Preencher simulação'),
+                label: const Text('Preencher demonstração'),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(

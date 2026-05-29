@@ -150,18 +150,18 @@ class PixRepository {
   }) async {
     final normalizedKey = key.trim();
     if (normalizedKey.isEmpty) {
-      throw StateError('Informe a chave PIX.');
+      throw StateError('Informe a chave Pix.');
     }
 
     final favorite = await _findFavoriteRecipient(normalizedKey);
     if (favorite != null) return favorite;
 
     return PixRecipient(
-      name: 'Destinatário simulado',
-      bank: 'Banco simulado',
+      name: 'Destinatário de demonstração',
+      bank: 'Banco de demonstração',
       key: normalizedKey,
       keyType: keyType,
-      document: 'Simulação PIX',
+      document: 'Simulação Pix',
       isVerified: true,
       isFavorite: false,
     );
@@ -193,11 +193,11 @@ class PixRepository {
         final balance = _balanceFrom(userData);
 
         if (dailySent + valorCentavos > dailyLimitCentavos) {
-          throw StateError('Limite diário de PIX excedido.');
+          throw StateError('Você atingiu o limite diário de Pix.');
         }
 
         if (balance < valorCentavos) {
-          throw StateError('Saldo insuficiente para enviar este PIX.');
+          throw StateError('Seu saldo não cobre esse Pix.');
         }
 
         if (!userSnapshot.exists) {
@@ -230,11 +230,11 @@ class PixRepository {
         });
       });
     } on StateError catch (error) {
-      if (error.message == 'Limite diário de PIX excedido.') {
+      if (error.message == 'Você atingiu o limite diário de Pix.') {
         await _registerNotification(
           type: 'daily_limit',
           title: 'Limite diário atingido',
-          body: 'Essa transferência ultrapassa seu limite diário de PIX.',
+          body: 'Essa transferência ultrapassa seu limite diário de Pix.',
         );
       }
       rethrow;
@@ -243,7 +243,7 @@ class PixRepository {
     await _registerNotification(
       type: 'balance_changed',
       title: 'Saldo atualizado',
-      body: 'PIX enviado no valor de '
+      body: 'Pix enviado no valor de '
           '${BrFormatters.currencyFromCentavos(valorCentavos)}.',
     );
     _clearMonthlySummaryCache();
@@ -299,7 +299,7 @@ class PixRepository {
         'tipoChave': tipoChave,
         'recipientName': payerName,
         'recipientBank': payerBank,
-        'recipientDocument': 'Pagador simulado',
+        'recipientDocument': 'Pagador de demonstração',
         'valorCentavos': valorCentavos,
         'direction': 'received',
         'transactionType': 'pix',
@@ -311,8 +311,8 @@ class PixRepository {
 
     await _registerNotification(
       type: 'pix_received',
-      title: 'PIX recebido',
-      body: 'Você recebeu um PIX de '
+      title: 'Pix recebido',
+      body: 'Você recebeu um Pix de '
           '${BrFormatters.currencyFromCentavos(valorCentavos)}.',
     );
     _clearMonthlySummaryCache();
@@ -323,7 +323,7 @@ class PixRepository {
       tipoChave: tipoChave,
       recipientName: payerName,
       recipientBank: payerBank,
-      recipientDocument: 'Pagador simulado',
+      recipientDocument: 'Pagador de demonstração',
       valorCentavos: valorCentavos,
       direction: 'received',
       transactionType: 'pix',
@@ -337,12 +337,12 @@ class PixRepository {
     final existingSnapshot = await docRef.get();
     final existingData = existingSnapshot.data();
     if (existingData == null) {
-      throw StateError('PIX não encontrado.');
+      throw StateError('Pix não encontrado.');
     }
 
     final existingStatus = (existingData['status'] ?? '').toString();
     if (existingStatus != 'pendente') {
-      throw StateError('Somente PIX pendente pode ser cancelado.');
+      throw StateError('Somente Pix pendente pode ser cancelado.');
     }
 
     await _firestore!.runTransaction((transaction) async {
@@ -350,12 +350,12 @@ class PixRepository {
       final pixData = pixSnapshot.data();
 
       if (pixData == null) {
-        throw StateError('PIX não encontrado.');
+        throw StateError('Pix não encontrado.');
       }
 
       final status = (pixData['status'] ?? '').toString();
       if (status != 'pendente') {
-        throw StateError('Somente PIX pendente pode ser cancelado.');
+        throw StateError('Somente Pix pendente pode ser cancelado.');
       }
 
       final value = _intFrom(pixData['valorCentavos']);
@@ -548,7 +548,7 @@ class PixFavoriteRecipient {
     final data = doc.data() ?? {};
     return PixFavoriteRecipient(
       id: doc.id,
-      name: (data['name'] ?? 'Contato PIX').toString(),
+      name: (data['name'] ?? 'Contato Pix').toString(),
       bank: (data['bank'] ?? 'Banco não informado').toString(),
       key: (data['key'] ?? '').toString(),
       keyType: (data['keyType'] ?? 'E-mail').toString(),

@@ -25,7 +25,7 @@ class _PixQrScannerPageState extends State<PixQrScannerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ler QR Code PIX'),
+        title: const Text('Ler QR Code Pix'),
       ),
       body: MobileScanner(
         onDetect: _onDetect,

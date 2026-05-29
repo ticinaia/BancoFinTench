@@ -44,7 +44,9 @@ class _AuthLockPageState extends State<AuthLockPage> {
       if (unlocked) {
         _finishUnlock();
       } else {
-        _showMessage('Use seu PIN para desbloquear.');
+        _showMessage(
+          'Não conseguimos desbloquear por biometria. Use seu PIN.',
+        );
       }
     } finally {
       if (mounted) setState(() => _unlocking = false);
@@ -54,7 +56,7 @@ class _AuthLockPageState extends State<AuthLockPage> {
   Future<void> _unlockWithPin() async {
     final pin = _pinController.text.trim();
     if (pin.length < 4) {
-      _showMessage('Informe seu PIN.');
+      _showMessage('Digite seu PIN para continuar.');
       return;
     }
 
@@ -67,7 +69,7 @@ class _AuthLockPageState extends State<AuthLockPage> {
       if (isValid) {
         _finishUnlock();
       } else {
-        _showMessage('PIN incorreto.');
+        _showMessage('Esse PIN não confere.');
       }
     } finally {
       if (mounted) setState(() => _checkingPin = false);
@@ -171,7 +173,7 @@ class _AuthLockPageState extends State<AuthLockPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Olá, $userName. Confirme sua identidade para continuar.',
+                      'Olá, $userName. Confirme sua identidade para acessar sua conta.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,

@@ -100,7 +100,7 @@ class _HomePageState extends State<HomePage> {
       );
     } catch (_) {
       if (mounted) {
-        _mostrarMensagem('Não foi possível confirmar sua identidade agora.');
+        _mostrarMensagem('Não conseguimos confirmar sua identidade agora.');
       }
       return false;
     }
@@ -132,7 +132,8 @@ class _HomePageState extends State<HomePage> {
     } catch (_) {
       if (mounted) {
         _mostrarMensagem(
-            'Não conseguimos atualizar a foto. Tente outra imagem.');
+          'Não conseguimos atualizar a foto. Tente outra imagem.',
+        );
       }
     }
   }
@@ -153,7 +154,7 @@ class _HomePageState extends State<HomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Escolher imagem de perfil',
+                  'Escolher foto de perfil',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 20),
@@ -244,7 +245,7 @@ Conta: $accountCode
                 padding: EdgeInsets.all(20),
                 child: HomeInfoPanel(
                   icon: Icons.cloud_off_rounded,
-                  title: 'Não foi possível carregar sua conta',
+                  title: 'Não conseguimos carregar sua conta',
                   message:
                       'Verifique sua conexão e tente novamente em instantes.',
                 ),
@@ -304,7 +305,7 @@ Conta: $accountCode
                                 ),
                           ),
                           Text(
-                            'Toque na foto para deixar a conta com a sua cara',
+                            'Toque na foto para personalizar seu perfil',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.textSecondary,
@@ -332,7 +333,7 @@ Conta: $accountCode
                         icon: Icons.cloud_off_rounded,
                         title: 'Resumo indisponível',
                         message:
-                            'Não foi possível atualizar as entradas e saídas.',
+                            'Não conseguimos atualizar as entradas e saídas.',
                       );
                     }
 
@@ -403,7 +404,7 @@ Conta: $accountCode
                     ),
                     ActionTile(
                       icon: Icons.qr_code_2_rounded,
-                      label: 'Receber PIX',
+                      label: 'Receber Pix',
                       color: AppColors.success,
                       onTap: () => Navigator.pushNamed(
                         context,

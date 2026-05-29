@@ -253,7 +253,7 @@ class _RecentPixListState extends State<RecentPixList> {
         if (snapshot.hasError) {
           return const HomeInfoPanel(
             icon: Icons.cloud_off_rounded,
-            title: 'Não foi possível carregar as transferências',
+            title: 'Não conseguimos carregar as transferências',
             message: 'Verifique sua conexão e tente novamente em instantes.',
           );
         }
@@ -267,7 +267,7 @@ class _RecentPixListState extends State<RecentPixList> {
         if (docs.isEmpty) {
           return HomeInfoPanel(
             icon: Icons.pix_rounded,
-            title: 'Seu extrato começa no primeiro PIX',
+            title: 'Seu extrato começa no primeiro Pix',
             message:
                 'Quando você enviar ou receber, os movimentos aparecem aqui.',
             action: OutlinedButton.icon(
@@ -276,7 +276,7 @@ class _RecentPixListState extends State<RecentPixList> {
                 AppRoutes.pixTransfer,
               ),
               icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Fazer primeiro PIX'),
+              label: const Text('Fazer primeiro Pix'),
             ),
           );
         }
@@ -300,7 +300,7 @@ class _RecentPixListState extends State<RecentPixList> {
               final direction = (data['direction'] ?? 'sent').toString();
               final recebido = direction == 'received';
               final name =
-                  (data['recipientName'] ?? data['chave'] ?? 'PIX').toString();
+                  (data['recipientName'] ?? data['chave'] ?? 'Pix').toString();
               final date = _formatDate(data['data'] ?? data['createdAt']);
 
               return Container(

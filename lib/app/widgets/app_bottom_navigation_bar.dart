@@ -51,7 +51,7 @@ class AppBottomNavigationBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Icon(Icons.pix_outlined),
           activeIcon: Icon(Icons.pix_rounded),
-          label: 'PIX',
+          label: 'Pix',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.receipt_long_outlined),

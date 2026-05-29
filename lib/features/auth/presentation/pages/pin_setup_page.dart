@@ -45,7 +45,7 @@ class _PinSetupPageState extends State<PinSetupPage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível salvar o PIN.')),
+        const SnackBar(content: Text('Não conseguimos salvar seu PIN agora.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -75,12 +75,12 @@ class _PinSetupPageState extends State<PinSetupPage> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Crie seu PIN',
+              'Crie seu PIN de acesso',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'Ele será usado como alternativa à biometria e para proteger sua sessão.',
+              'Ele protege sua sessão e funciona como alternativa à biometria.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),

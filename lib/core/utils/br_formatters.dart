@@ -32,6 +32,13 @@ class BrFormatters {
     return _currencyFormatter.format(centavos / 100);
   }
 
+  static String currencyInputFromCentavos(int centavos) {
+    return currencyFromCentavos(centavos)
+        .replaceAll('R\$\u00a0', '')
+        .replaceAll('R\$ ', '')
+        .trim();
+  }
+
   static String dateTime(DateTime date) {
     return _dateTimeFormatter.format(date);
   }

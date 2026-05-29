@@ -1,398 +1,275 @@
-# BancoFinTech
+# FinTech - Banco Digital em Flutter
 
-Aplicativo bancario feito em Flutter para a disciplina de Mobile. O projeto ja
-nasceu com uma base organizada para a equipe trabalhar em paralelo: Firebase,
-rotas nomeadas, tema global, telas iniciais e servicos centralizados.
+## 1. Apresentação do projeto
 
-Este README explica como cada membro deve preparar o ambiente, entender o fluxo
-do app e contribuir sem quebrar o trabalho dos outros.
+O **FinTech** é um aplicativo mobile desenvolvido em **Flutter** com a proposta de simular a experiência principal de um banco digital. O projeto foi criado para atender à atividade de Programação Mobile, que solicitava uma aplicação bancária com acesso a banco de dados, telas mínimas de login, principal, cotação e transferência, uso de rotas nomeadas, uso de API externa e utilização de plugins.
 
-## 1. Stack do Projeto
+A ideia central foi construir um app que não fosse apenas uma sequência de telas isoladas, mas uma jornada parecida com a de um banco real: o usuário cria conta, confirma e-mail, protege o acesso com PIN ou biometria, consulta saldo, acompanha cotações, envia e recebe Pix, visualiza extrato e abre comprovantes.
 
-- Flutter e Dart
-- Material Design 3
-- Firebase Core
-- Firebase Auth
-- Cloud Firestore
-- Flutter Riverpod
-- Dio para chamadas HTTP
-- AwesomeAPI para cotacoes
-- Local Auth para biometria
-- Flutter Secure Storage para dados sensiveis locais
-- Mobile Scanner para leitura de codigos
-- Share Plus para compartilhamento
-- Image Picker para camera/galeria
-- Google Fonts
+## 2. Requisitos da atividade atendidos
 
-## 2. Como Preparar o Ambiente
+| Requisito | Como foi implementado |
+| --- | --- |
+| Aplicação mobile em Flutter | Projeto desenvolvido em Flutter e Dart, com Material Design 3. |
+| Tema de banco digital | Fluxo de conta, saldo, Pix, extrato, comprovante, segurança e cotações. |
+| Acesso a banco de dados | Firebase Auth para autenticação e Cloud Firestore para dados da conta, saldo, Pix, favoritos e histórico. |
+| Tela de Login | `LoginPage`, com autenticação por e-mail e senha. |
+| Tela Principal | `HomePage`, com saldo, resumo mensal, ações rápidas e últimas transferências. |
+| Tela de Cotação | `CotacaoPage`, consumindo API externa com Dio. |
+| Tela de Transferência | `PixTransferPage`, com chave Pix, valor, confirmação, PIN/biometria e comprovante. |
+| Rotas nomeadas | Todas as telas são acessadas por constantes em `AppRoutes`. |
+| Rotas nomeadas com argumentos | `PixReceiptPage` recebe um `PixReceipt` por argumento de rota. |
+| Uso de API com conexão | AwesomeAPI para consultar dólar, euro e bitcoin em reais. |
+| Uso de plugins | Biometria, armazenamento seguro, câmera/galeria, scanner de QR Code, geração de QR Code e compartilhamento. |
+| Criatividade | Jornada com verificação de e-mail, bloqueio por sessão, Pix com QR Code, favoritos e comprovantes. |
 
-1. Instale o Flutter na maquina.
-2. Confirme se o Flutter esta funcionando:
+## 3. Tecnologias utilizadas
 
-```bash
-flutter doctor
-```
+- **Flutter e Dart**: base da aplicação mobile.
+- **Material Design 3**: construção dos componentes visuais.
+- **Firebase Core**: inicialização do Firebase.
+- **Firebase Auth**: cadastro, login, verificação de e-mail e recuperação de senha.
+- **Cloud Firestore**: persistência de dados bancários simulados.
+- **Dio**: comunicação HTTP com a API de cotações.
+- **AwesomeAPI**: consulta de cotações de USD, EUR e BTC em BRL.
+- **Local Auth**: autenticação por biometria ou bloqueio do aparelho.
+- **Flutter Secure Storage**: armazenamento local seguro do PIN.
+- **Mobile Scanner**: leitura de QR Code Pix.
+- **QR Flutter**: geração de QR Code para recebimento Pix.
+- **Share Plus**: compartilhamento de comprovantes.
+- **Image Picker**: escolha de foto de perfil por câmera ou galeria.
+- **Google Fonts e Intl**: tipografia e formatação brasileira de moeda/data.
 
-3. Entre na pasta do projeto:
+## 4. Organização do projeto
 
-```bash
-cd banco
-```
-
-4. Baixe as dependencias:
-
-```bash
-flutter pub get
-```
-
-5. Rode o app em um emulador, celular ou navegador:
-
-```bash
-flutter run
-```
-
-6. Para rodar no Chrome:
-
-```bash
-flutter run -d chrome
-```
-
-## 3. Comandos Importantes
-
-Use estes comandos antes de entregar qualquer parte do trabalho:
-
-```bash
-flutter analyze
-flutter test
-```
-
-Se precisar limpar arquivos gerados pelo Flutter:
-
-```bash
-flutter clean
-flutter pub get
-```
-
-## 4. Estrutura de Pastas
+A organização foi feita por responsabilidades, separando estrutura global, serviços centrais e funcionalidades.
 
 ```text
 lib/
 ├── app/
-│   ├── routes/
-│   └── theme/
+│   ├── routes/              # Rotas nomeadas e gerador de rotas
+│   ├── theme/               # Cores, tema claro/escuro e estilos
+│   └── widgets/             # Widgets globais, como navegação inferior
 ├── core/
-│   ├── constants/
-│   └── services/
+│   ├── constants/           # Constantes do app
+│   ├── services/            # Firebase, plugins e repositórios centrais
+│   └── utils/               # Formatadores brasileiros
 ├── features/
-│   ├── auth/
-│   ├── home/
-│   └── splash/
-├── firebase_options.dart
-└── main.dart
+│   ├── auth/                # Login, cadastro, segurança, PIN e cotações
+│   ├── home/                # Tela principal
+│   ├── pix/                 # Transferência, recebimento, extrato e comprovante
+│   └── splash/              # Tela inicial e redirecionamento
+└── main.dart                # Inicialização do aplicativo
 ```
 
-### O que fica em cada pasta
+Essa divisão ajudou a manter o código mais legível. Cada funcionalidade possui suas páginas, modelos, validadores, serviços ou repositórios próprios.
 
-- `lib/main.dart`: ponto de entrada do app. Inicializa Flutter, orientacao da
-  tela, plugins, Firebase e abre o `MaterialApp`.
-- `lib/app/routes/`: concentra os nomes das rotas e o gerador de navegacao.
-- `lib/app/theme/`: cores, estilos de texto e tema global do app.
-- `lib/core/constants/`: constantes compartilhadas, como nome do app, URLs,
-  timeouts e chaves de armazenamento.
-- `lib/core/services/`: servicos reutilizaveis, como Firebase e plugins.
-- `lib/features/`: funcionalidades do app separadas por modulo.
-- `test/`: testes automatizados.
-- `android/`, `ios/`, `web/`: configuracoes especificas de cada plataforma.
-- `build/`: arquivos gerados automaticamente. Nao deve ser alterada manualmente.
+## 5. Decisões de arquitetura
 
-## 5. Fluxo de Execucao do App
+O projeto usa uma arquitetura simples, mas organizada. A camada de apresentação fica nas telas e widgets. A camada de dados fica nos repositórios, como `AuthRepository`, `UserRepository`, `PixRepository` e `CotacaoRepository`. Serviços compartilhados, como Firebase e plugins, ficam em `core/services`.
 
-1. O Flutter executa `main()` em `lib/main.dart`.
-2. `WidgetsFlutterBinding.ensureInitialized()` prepara recursos nativos antes do
-   app abrir.
-3. O app trava a orientacao em modo retrato, ideal para um aplicativo bancario.
-4. A barra de status e configurada com fundo transparente.
-5. `AppPlugins.initialize()` inicializa os servicos centrais.
-6. `FirebaseService.initialize()` tenta iniciar o Firebase usando
-   `lib/firebase_options.dart`.
-7. O app chama `runApp(const BancoFinTechApp())`.
-8. `BancoFinTechApp` cria o `MaterialApp` com:
-   - titulo do app vindo de `AppConstants.appName`;
-   - tema claro e tema escuro;
-   - idioma `pt_BR`;
-   - rota inicial `AppRoutes.splash`;
-   - rotas geradas por `AppRouter.onGenerateRoute`.
+Essa escolha foi feita para evitar que as telas ficassem responsáveis por tudo. Por exemplo, a tela de Pix não conversa diretamente com o Firestore; ela chama o `PixRepository`, que centraliza regras de saldo, limite diário, envio, recebimento, favoritos e histórico.
 
-## 6. Fluxo de Telas
+Também foi criada uma centralização de repositórios em `AppRepositories`. Com isso, as telas acessam dependências do app por um ponto único, deixando o código mais consistente.
 
-### Splash
+## 6. Escolha do Firebase como banco de dados
 
-Arquivo:
+O Firebase foi escolhido porque combina bem com a proposta de um app mobile acadêmico e funcional. Ele oferece autenticação e banco de dados em tempo real sem exigir a criação de um backend próprio.
 
-```text
-lib/features/splash/presentation/pages/splash_page.dart
-```
+No projeto, ele foi usado em duas partes principais:
 
-Passo a passo:
+- **Firebase Auth**: gerencia cadastro, login, verificação de e-mail, recuperação de senha e conta autenticada.
+- **Cloud Firestore**: armazena dados do usuário, saldo, foto de perfil em base64, histórico de Pix, contatos favoritos e notificações internas.
 
-1. Mostra o logo e o nome BancoFinTech.
-2. Executa animações de fade, escala e slide.
-3. Verifica a sessão ativa assim que o Firebase estiver pronto.
-4. Redireciona para login, verificação de e-mail, criação de PIN ou bloqueio.
+A escolha do Firestore também facilitou a atualização automática da interface. A Home, o resumo mensal e o extrato escutam streams do banco, então os dados são refletidos no app conforme mudam.
 
-### Login
+## 7. Rotas nomeadas e navegação
 
-Arquivo:
-
-```text
-lib/features/auth/presentation/pages/login_page.dart
-```
-
-Passo a passo:
-
-1. Mostra o status do Firebase.
-2. Exibe formulario com e-mail e senha.
-3. Valida se os campos foram preenchidos.
-4. Ao clicar em `Entrar`, tenta autenticar com Firebase Auth.
-5. Se o usuario ainda nao existir, cria a conta com e-mail e senha.
-6. Cria ou atualiza o documento do usuario no Firestore.
-7. Depois navega para a home.
-
-Arquivos principais da autenticacao:
-
-```text
-lib/features/auth/data/repositories/auth_repository.dart
-lib/features/auth/data/repositories/user_repository.dart
-lib/features/auth/domain/models/app_user.dart
-```
-
-### Home
-
-Arquivo:
-
-```text
-lib/features/home/presentation/pages/home_page.dart
-```
-
-Passo a passo:
-
-1. Mostra um dashboard inicial.
-2. Informa se o Firebase foi inicializado.
-3. Possui um botao para voltar ao login.
-
-A home e o ponto onde as proximas features do banco devem aparecer: saldo,
-extrato, perfil, transferencias, pagamentos, cartoes e outras entregas do grupo.
-
-## 7. Rotas e Navegacao
-
-As rotas ficam em:
+As rotas ficam centralizadas em:
 
 ```text
 lib/app/routes/app_routes.dart
 lib/app/routes/routes.dart
 ```
 
-Rotas atuais:
-
-- `/`: splash
-- `/login`: login
-- `/home`: home
-
-Para navegar:
-
-```dart
-Navigator.pushNamed(context, AppRoutes.login);
-Navigator.pushReplacementNamed(context, AppRoutes.home);
-```
-
-Para adicionar uma nova tela:
-
-1. Crie a tela dentro de `lib/features/nome_da_feature/`.
-2. Adicione uma constante em `AppRoutes`.
-3. Importe a pagina em `routes.dart`.
-4. Adicione um `case` no `switch` de `AppRouter.onGenerateRoute`.
-5. Teste a navegacao no app.
-
-## 8. Firebase
-
-Arquivos principais:
-
-- `lib/firebase_options.dart`
-- `android/app/google-services.json`
-- `firebase.json`
-
-O Firebase e inicializado em:
+Principais rotas:
 
 ```text
-lib/core/services/firebase_service.dart
+/login
+/cadastro
+/home
+/cotacao
+/pix-transfer
+/pix-receive
+/pix-history
+/pix-receipt
+/security
 ```
 
-O servico possui:
+O projeto também usa **rotas com argumentos**. O melhor exemplo é o comprovante Pix: depois de enviar ou receber um Pix, o app navega para `AppRoutes.pixReceipt` enviando um objeto `PixReceipt`. A tela `PixReceiptPage` recebe esse argumento e monta o comprovante com valor, chave, banco, status, data e código da transação.
 
-- `FirebaseService.isReady`: indica se o Firebase iniciou corretamente.
-- `FirebaseService.lastError`: guarda o erro caso a inicializacao falhe.
-- `FirebaseService.auth`: acesso ao Firebase Auth.
-- `FirebaseService.firestore`: acesso ao Cloud Firestore.
+Além disso, existe uma proteção de rotas. Se o usuário não estiver logado, ele volta para o login. Se o e-mail não estiver verificado, ele vai para a tela de confirmação. Se a sessão estiver bloqueada, ele vai para a tela de desbloqueio.
 
-Produtos que a equipe deve habilitar no console do Firebase conforme as
-features forem implementadas:
+## 8. Jornada do usuário
 
-- Authentication com Email/Password
-- Cloud Firestore
-- Storage, se houver upload de imagens ou documentos
+### 8.1 Abertura do aplicativo
 
-Colecao inicial usada pelo app:
+A jornada começa na Splash. Essa tela verifica o estado da sessão e decide para onde o usuário deve ir. Esse redirecionamento torna o app mais próximo de uma experiência real, porque o usuário não precisa escolher manualmente se deve ir para login, verificação de e-mail, PIN ou Home.
 
-```text
-users/{uid}
-```
+### 8.2 Cadastro
 
-Campos gravados:
+No cadastro, o usuário informa nome completo, e-mail, CPF, celular e senha. O app valida os dados antes de criar a conta. Essa etapa foi pensada para simular a abertura de uma conta bancária, em que os dados precisam ter formato válido.
 
-- `email`: e-mail do usuario.
-- `name`: nome inicial gerado a partir do e-mail.
-- `createdAt`: data de criacao do documento.
-- `updatedAt`: data da ultima atualizacao.
+Depois do cadastro, o app envia o usuário para a confirmação de e-mail. Essa decisão reforça a ideia de segurança e evita que qualquer conta criada entre diretamente no app sem validação.
 
-## 9. Plugins Centralizados
+### 8.3 Login e verificação
 
-Os plugins ficam em:
+No login, o usuário entra com e-mail e senha. Se o e-mail ainda não estiver confirmado, o app direciona para a tela de verificação. Se já estiver confirmado, o app verifica se o usuário possui PIN configurado.
 
-```text
-lib/core/services/app_plugins.dart
-```
+Esse fluxo cria uma ordem de segurança:
 
-Use essa classe para evitar criar varias instancias soltas pelo projeto.
+1. O usuário precisa existir no Firebase Auth.
+2. O e-mail precisa estar verificado.
+3. O usuário precisa ter um PIN.
+4. A sessão precisa estar desbloqueada.
 
-Recursos disponiveis:
+### 8.4 Criação de PIN e desbloqueio
 
-- `AppPlugins.dio`: cliente HTTP configurado com a URL da AwesomeAPI.
-- `AppPlugins.secureStorage`: armazenamento seguro local.
-- `AppPlugins.localAuth`: biometria e autenticacao local.
-- `AppPlugins.imagePicker`: camera e galeria.
-- `AppPlugins.firebaseAuth`: Firebase Auth, quando o Firebase estiver pronto.
-- `AppPlugins.firestore`: Cloud Firestore, quando o Firebase estiver pronto.
+Após confirmar o e-mail, o usuário cria um PIN. Esse PIN é salvo de forma segura usando `flutter_secure_storage`. Depois disso, o acesso ao app pode ser protegido por PIN ou biometria.
 
-## 10. Tema Visual
+O app também possui bloqueio de sessão. Se o usuário ficar muito tempo inativo ou sair e voltar após o tempo definido, a sessão é bloqueada e precisa ser liberada novamente.
 
-Arquivos:
+### 8.5 Tela principal
 
-```text
-lib/app/theme/app_colors.dart
-lib/app/theme/app_text_styles.dart
-lib/app/theme/app_theme.dart
-```
+A Home apresenta as informações principais da conta:
 
-Regras para manter o visual consistente:
+- saudação com nome do usuário;
+- foto de perfil;
+- saldo com opção de ocultar/mostrar;
+- proteção por biometria ou bloqueio do aparelho;
+- resumo de entradas e saídas do mês;
+- ações rápidas;
+- últimas transferências.
 
-1. Use as cores de `AppColors`.
-2. Use os estilos de texto de `AppTextStyles` ou `Theme.of(context).textTheme`.
-3. Evite cores fixas direto nas telas, exceto quando for realmente necessario.
-4. Prefira componentes do tema global, como `ElevatedButton`, `TextFormField`,
-   `Card` e `AppBar`.
-5. Antes de criar um estilo novo, veja se o tema atual ja resolve.
+A ideia da Home foi funcionar como o painel inicial de um banco digital. Ela concentra o que o usuário provavelmente procura primeiro: saldo, movimentações recentes e atalhos para ações financeiras.
 
-## 11. Como Cada Membro Deve Trabalhar
+### 8.6 Cotações
 
-Fluxo recomendado:
+A tela de cotações consulta a AwesomeAPI e mostra valores de dólar, euro e bitcoin em reais. A tela também possui atualização manual e tratamento de erro para problemas de conexão.
 
-1. Atualize o projeto antes de comecar.
-2. Escolha uma feature pequena e bem definida.
-3. Crie ou edite arquivos somente dentro da area da sua feature quando possivel.
-4. Se precisar mexer em `core/`, `routes/` ou `theme/`, avise o grupo, porque
-   essas pastas afetam todo mundo.
-5. Rode o app e teste manualmente o fluxo alterado.
-6. Rode `flutter analyze`.
-7. Rode `flutter test`.
-8. Envie a alteracao com uma mensagem clara.
+Esse requisito foi importante porque mostra o uso de API externa com conexão real. A consulta fica no `CotacaoRepository`, deixando a tela responsável apenas por exibir o resultado.
 
-Exemplo de divisao de tarefas:
+### 8.7 Transferência Pix
 
-- Membro 1: autenticacao e cadastro.
-- Membro 2: home, saldo e extrato.
-- Membro 3: transferencias e pagamentos.
-- Membro 4: perfil, biometria e armazenamento seguro.
-- Membro 5: integracao com API externa e cotacoes.
+A transferência Pix foi a parte mais trabalhosa da jornada. O usuário escolhe o tipo de chave, informa a chave, digita o valor e confirma os dados. Antes de enviar, o app confere saldo, resolve o destinatário, mostra um resumo e pede autenticação por biometria ou PIN.
 
-## 12. Padrao Para Criar Novas Features
+Depois do envio, o saldo é atualizado no Firestore e o usuário recebe um comprovante. O app também permite:
 
-Crie uma pasta dentro de `lib/features/`:
+- preencher uma transferência de demonstração;
+- ler QR Code;
+- colar código Pix;
+- salvar destinatários como favoritos;
+- reutilizar contatos frequentes.
 
-```text
-lib/features/nome_da_feature/
-└── presentation/
-    └── pages/
-        └── nome_da_pagina.dart
-```
+Essa tela tenta simular a sensação de um banco real, mas sem complicar demais a implementação para o contexto da atividade.
 
-Se a feature crescer, use tambem:
+### 8.8 Recebimento Pix
 
-```text
-lib/features/nome_da_feature/
-├── data/
-├── domain/
-└── presentation/
-    ├── pages/
-    └── widgets/
-```
+Na tela de recebimento, o usuário escolhe uma chave da conta, informa um valor e o app gera um QR Code. Depois, pode simular o recebimento, atualizando saldo e criando comprovante.
 
-Sugestao de responsabilidades:
+Essa parte complementa a transferência, pois mostra os dois lados do Pix: enviar e receber.
 
-- `data/`: comunicacao com Firebase, APIs e armazenamento local.
-- `domain/`: regras de negocio, entidades e casos de uso.
-- `presentation/`: telas, widgets e estados visuais.
+### 8.9 Extrato e comprovante
 
-## 13. Checklist Antes de Entregar
+O extrato lista movimentações, permite filtros por tipo, data e valor, e abre comprovantes. O comprovante pode ser compartilhado usando plugin de compartilhamento.
 
-Antes de dizer que sua parte esta pronta, confira:
+A rota de comprovante é um ponto importante do projeto porque demonstra navegação com argumento. A tela recebe os dados da transação e monta uma visualização própria, como acontece em aplicativos bancários.
 
-- O app abre sem erro.
-- A tela funciona no fluxo esperado.
-- Nao existem imports inutilizados.
-- Nao existem `print` esquecidos.
-- O codigo esta formatado.
-- `flutter analyze` passa sem problemas.
-- `flutter test` passa.
-- Arquivos gerados dentro de `build/` nao foram editados manualmente.
-- Dados sensiveis, senhas e tokens nao foram colocados no codigo.
+### 8.10 Segurança e preferências
 
-Para formatar:
+A tela de segurança permite atualizar dados, solicitar troca de e-mail, alterar senha por e-mail, trocar PIN, escolher tema claro/escuro/sistema e excluir conta.
+
+Essa tela foi incluída para deixar a aplicação mais completa e demonstrar que um banco digital também precisa de área de gerenciamento da conta.
+
+## 9. Jornada do desenvolvedor
+
+Durante o desenvolvimento, a maior dificuldade foi transformar a ideia geral de "banco digital" em funcionalidades simples, mas convincentes. Um banco real possui muitas regras complexas, então foi necessário escolher quais partes seriam simuladas sem perder a coerência.
+
+A lógica de Pix foi o principal desafio. Era necessário pensar em saldo, limite diário, chave, destinatário, recebimento, histórico, comprovante e cancelamento de Pix pendente. A dificuldade não foi apenas criar telas, mas organizar uma sequência lógica que fizesse sentido para o usuário e estivesse dentro das nossas capacidades como desenvolvedores.
+
+Outra dificuldade foi reunir ideias que fossem simples para implementar dentro do prazo, mas que ainda parecessem com um banco real. Por isso, algumas decisões foram tomadas:
+
+- o saldo inicial é simulado;
+- os destinatários podem ser resolvidos de forma demonstrativa;
+- o recebimento Pix é simulado pelo próprio app;
+- o QR Code usa payload Pix para tornar a experiência mais realista;
+- o comprovante registra as informações essenciais da operação;
+- o Firestore guarda as movimentações para manter histórico.
+
+Também houve preocupação em manter o código organizado. Conforme o app cresceu, algumas responsabilidades foram separadas em repositórios, validadores, formatadores e widgets próprios. Isso facilitou a manutenção pontual durante o desenvolvimento.
+
+## 10. Uso de IA no desenvolvimento
+
+A inteligência artificial foi utilizada como apoio durante o projeto, principalmente em duas frentes: design e manutenção pontual.
+
+No design, a IA ajudou a pensar em uma interface com aparência de banco digital, sugerindo organização de telas, hierarquia visual, textos mais claros e componentes coerentes com o uso mobile. A decisão final e a implementação ficaram no código Flutter, mas a IA auxiliou apenas no processo inicial. 
+
+Na manutenção, a IA foi usada para revisar textos, sugerir nomes mais claros, identificar repetições e apoiar pequenas otimizações sem alterar a lógica principal do app que foi feito pelos desenvolvedores. Um exemplo foi a criação de um helper para formatar valores monetários em campos de entrada, evitando repetição de código em telas de Pix.
+
+O uso da IA não substituiu a compreensão do projeto. Ela foi usada como ferramenta de apoio para organizar ideias, melhorar clareza e acelerar ajustes pontuais. Usamos de maneira consciente vsito que um dos requisitos foi justamente a proibiç~ao de uso massivo, o qual, essa equipe em especifico decidiu que passaria longe dos nossos principios e objetivos desde o inicio.
+
+## 11. Como executar o projeto
+
+1. Instale o Flutter.
+2. Entre na pasta do projeto.
+3. Baixe as dependências:
 
 ```bash
-dart format lib test
+flutter pub get
 ```
 
-## 14. O Que Ja Esta Pronto
+4. Execute o app:
 
-- Estrutura inicial do projeto Flutter.
-- Firebase configurado no codigo.
-- Inicializacao centralizada de plugins.
-- Tema claro e escuro.
-- Rotas nomeadas.
-- Splash animada.
-- Tela de login inicial.
-- Tela home inicial.
-- Teste simples de abertura do app.
+```bash
+flutter run
+```
 
-## 15. Proximos Passos Sugeridos
+5. Para executar no Chrome:
 
-1. Implementar login real com Firebase Auth.
-2. Criar tela de cadastro.
-3. Verificar sessao ativa na splash.
-4. Criar modelo de usuario no Firestore.
-5. Criar dashboard com saldo e ultimas transacoes.
-6. Criar extrato.
-7. Criar fluxo de transferencia.
-8. Adicionar biometria com `local_auth`.
-9. Salvar dados sensiveis com `flutter_secure_storage`.
-10. Criar testes para os fluxos principais.
+```bash
+flutter run -d chrome
+```
 
-## 16. Observacoes Importantes
+## 12. Comandos de verificação
 
-- A pasta `assets/images/` e `assets/icons/` esta declarada no `pubspec.yaml`.
-  Se forem usados assets, os arquivos devem ser colocados nessas pastas.
-- Se algum pacote novo for adicionado, rode `flutter pub get` e avise o grupo.
-- Alteracoes em Firebase, rotas, tema e constantes devem ser combinadas para
-  evitar conflito entre as tarefas.
-- O projeto esta em evolucao. Prefira organizar cada entrega de forma pequena,
-  testavel e facil de revisar.
+Antes de entregar ou gerar APK, foram usados comandos de análise e teste:
+
+```bash
+flutter analyze
+flutter test
+```
+
+Resultado da última verificação:
+
+- `flutter analyze`: sem problemas encontrados.
+- `flutter test`: todos os testes passaram.
+
+## 13. Geração do APK
+
+Para gerar um APK otimizado em modo release:
+
+```bash
+flutter build apk --release
+```
+
+O arquivo gerado normalmente fica em:
+
+```text
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+## 14. Considerações finais
+
+O FinTech foi desenvolvido com o objetivo de demonstrar os principais conceitos pedidos na atividade: telas em Flutter, navegação por rotas nomeadas, API externa, banco de dados, plugins e criatividade.
+
+Mais do que cumprir telas obrigatórias, o projeto tenta apresentar uma jornada completa de usuário em um banco digital. O foco foi criar uma experiência didática, organizada e coerente: da criação da conta até o uso de Pix, consulta de cotações, segurança e visualização de comprovantes.

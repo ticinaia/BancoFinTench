@@ -43,7 +43,8 @@ class _CadastroPageState extends State<CadastroPage> {
 
     if (!_authRepository.isAvailable) {
       _mostrarErro(
-          'Serviço indisponível no momento. Tente novamente mais tarde.');
+        'Não conseguimos abrir o cadastro agora. Tente novamente em instantes.',
+      );
       return;
     }
 
@@ -67,12 +68,12 @@ class _CadastroPageState extends State<CadastroPage> {
     } on FirebaseException {
       if (!mounted) return;
       _mostrarErro(
-        'Serviço temporariamente indisponível. Tente novamente em instantes.',
+        'O serviço ficou indisponível por um momento. Tente novamente em instantes.',
       );
     } catch (_) {
       if (!mounted) return;
       _mostrarErro(
-        'Não foi possível criar a conta. Tente novamente em instantes.',
+        'Não conseguimos criar sua conta agora. Tente novamente em instantes.',
       );
     } finally {
       if (mounted) setState(() => _carregando = false);
@@ -82,17 +83,17 @@ class _CadastroPageState extends State<CadastroPage> {
   String _mensagemFirebaseAuth(FirebaseAuthException erro) {
     switch (erro.code) {
       case 'email-already-in-use':
-        return 'Este e-mail já está cadastrado. Volte para o login.';
+        return 'Esse e-mail já tem uma conta. Entre pelo login.';
       case 'invalid-email':
         return 'Informe um e-mail válido.';
       case 'operation-not-allowed':
-        return 'Cadastro não disponível no momento. Tente mais tarde.';
+        return 'O cadastro está temporariamente indisponível.';
       case 'weak-password':
-        return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+        return 'Essa senha ainda está fraca. Use pelo menos 8 caracteres.';
       case 'network-request-failed':
         return 'Sem conexão com a internet. Verifique sua rede.';
       default:
-        return 'Não foi possível criar a conta. Tente novamente em instantes.';
+        return 'Não conseguimos criar sua conta agora. Tente novamente em instantes.';
     }
   }
 
@@ -174,12 +175,12 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Crie sua conta',
+              'Vamos criar sua conta',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              'Leva menos de um minuto para começar a usar o FinTech.',
+              'Preencha seus dados para começar a usar o FinTech com segurança.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -212,7 +213,7 @@ class _CadastroPageState extends State<CadastroPage> {
                         return 'Informe seu e-mail';
                       }
                       if (!BrAuthValidators.isValidEmail(valor.trim())) {
-                        return 'Use um e-mail válido com @ e .com';
+                        return 'Digite um e-mail válido';
                       }
                       return null;
                     },
@@ -248,7 +249,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       final digits = _onlyDigits(valor ?? '');
                       if (digits.isEmpty) return 'Informe seu celular';
                       if (!BrAuthValidators.isValidBrPhone(digits)) {
-                        return 'Informe um celular com 9 dígitos';
+                        return 'Digite um celular válido com DDD';
                       }
                       return null;
                     },
@@ -286,7 +287,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     initialValue: _aceitouTermos,
                     validator: (_) {
                       if (!_aceitouTermos) {
-                        return 'Você precisa aceitar os termos para criar a conta';
+                        return 'Aceite os termos para continuar';
                       }
                       return null;
                     },
@@ -326,7 +327,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.person_add),
-              label: Text(_carregando ? 'Cadastrando...' : 'Cadastrar'),
+              label: Text(_carregando ? 'Criando conta...' : 'Criar conta'),
             ),
             const SizedBox(height: 16),
             Wrap(

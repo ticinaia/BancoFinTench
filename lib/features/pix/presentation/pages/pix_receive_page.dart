@@ -132,7 +132,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
   Future<void> _copyPixKey() async {
     await Clipboard.setData(ClipboardData(text: _pixKey));
     if (!mounted) return;
-    _showMessage('Chave PIX copiada.');
+    _showMessage('Chave Pix copiada.');
   }
 
   Future<void> _simularRecebimento() async {
@@ -155,7 +155,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
       );
 
       if (!mounted) return;
-      _showMessage('PIX recebido e saldo atualizado.');
+      _showMessage('Pix recebido e saldo atualizado.');
       Navigator.pushReplacementNamed(
         context,
         AppRoutes.pixReceipt,
@@ -166,7 +166,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
       _showMessage(error.message);
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Não foi possível simular o recebimento.');
+      _showMessage('Não conseguimos simular o recebimento agora.');
     } finally {
       if (mounted) setState(() => _simulando = false);
     }
@@ -192,7 +192,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Confirmar entrada PIX',
+                  'Confirmar entrada Pix',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
@@ -202,11 +202,11 @@ class _PixReceivePageState extends State<PixReceivePage> {
                 ),
                 const PixResumoLinha(
                   label: 'Pagador',
-                  value: 'Cliente pagador simulado',
+                  value: 'Cliente pagador de demonstração',
                 ),
                 const PixResumoLinha(
                   label: 'Banco',
-                  value: 'Banco de origem simulado',
+                  value: 'Banco de origem de demonstração',
                 ),
                 PixResumoLinha(label: 'Chave', value: _pixKey),
                 PixResumoLinha(
@@ -234,10 +234,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
 
   void _preencherSimulacao() {
     const centavos = 8750;
-    final formatted = BrFormatters.currencyFromCentavos(centavos)
-        .replaceAll('R\$\u00a0', '')
-        .replaceAll('R\$ ', '')
-        .trim();
+    final formatted = BrFormatters.currencyInputFromCentavos(centavos);
 
     setState(() {
       _valorController.value = TextEditingValue(
@@ -245,7 +242,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
         selection: TextSelection.collapsed(offset: formatted.length),
       );
     });
-    _showMessage('Recebimento simulado preenchido.');
+    _showMessage('Preenchi um recebimento de demonstração.');
   }
 
   void _onValorChanged(String rawText) {
@@ -257,10 +254,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
     }
 
     final centavos = int.tryParse(digits) ?? 0;
-    final formatted = BrFormatters.currencyFromCentavos(centavos)
-        .replaceAll('R\$\u00a0', '')
-        .replaceAll('R\$ ', '')
-        .trim();
+    final formatted = BrFormatters.currencyInputFromCentavos(centavos);
     _valorController.value = TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
@@ -343,7 +337,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Receber PIX'),
+        title: const Text('Receber Pix'),
       ),
       bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
       body: SafeArea(
@@ -377,7 +371,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Informe um valor, compartilhe o código e simule a entrada no saldo.',
+                      'Informe um valor, compartilhe o código e registre a entrada no saldo.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withValues(alpha: 0.72),
                           ),
@@ -459,13 +453,13 @@ class _PixReceivePageState extends State<PixReceivePage> {
               OutlinedButton.icon(
                 onPressed: _copyPixKey,
                 icon: const Icon(Icons.copy_rounded),
-                label: const Text('Copiar chave PIX'),
+                label: const Text('Copiar chave Pix'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: _preencherSimulacao,
                 icon: const Icon(Icons.auto_fix_high_rounded),
-                label: const Text('Preencher simulação'),
+                label: const Text('Preencher demonstração'),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(

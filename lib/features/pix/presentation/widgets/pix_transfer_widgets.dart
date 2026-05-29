@@ -133,7 +133,7 @@ class RecipientPreview extends StatelessWidget {
                       ? 'Contato frequente'
                       : recipient.isVerified
                           ? 'Destinatário verificado'
-                          : 'Chave não verificada. Salve o contato para reutilizar com nome correto.',
+                          : 'Chave ainda não verificada. Salve o contato para reutilizar com o nome certo.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: recipient.isVerified
                             ? AppColors.textSecondary

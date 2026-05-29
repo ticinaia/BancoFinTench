@@ -27,7 +27,7 @@ class PixStatementItem {
     return PixStatementItem(
       id: doc.id,
       key: (data['chave'] ?? 'Chave não informada').toString(),
-      keyType: (data['tipoChave'] ?? 'PIX').toString(),
+      keyType: (data['tipoChave'] ?? 'Pix').toString(),
       counterpartyName:
           (data['recipientName'] ?? 'Pessoa não informada').toString(),
       counterpartyBank:
@@ -78,15 +78,15 @@ class PixStatementItem {
     if (transactionType == 'deposit') return 'Depósito';
     if (transactionType == 'payment') return 'Pagamento';
     return direction == 'received'
-        ? 'PIX recebido de $counterpartyName'
-        : 'PIX enviado para $counterpartyName';
+        ? 'Pix recebido de $counterpartyName'
+        : 'Pix enviado para $counterpartyName';
   }
 
   String get typeLabel {
     if (transactionType == 'initial') return 'Saldo inicial';
     if (transactionType == 'deposit') return 'Depósito';
     if (transactionType == 'payment') return 'Pagamento';
-    return direction == 'received' ? 'PIX recebido' : 'PIX enviado';
+    return direction == 'received' ? 'Pix recebido' : 'Pix enviado';
   }
 
   String get formattedAmount {
