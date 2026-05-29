@@ -84,6 +84,26 @@ class PixRepository {
     }
   }
 
+  Stream<PixSummary> watchMonthlySummary() async* {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month);
+    final summaryRef = _monthlySummaryRef(monthStart);
+
+    await _ensureMonthlySummary(monthStart);
+
+    yield* summaryRef.snapshots().map((snapshot) {
+      final data = snapshot.data();
+      if (data == null) {
+        return const PixSummary(entradasCentavos: 0, saidasCentavos: 0);
+      }
+
+      return PixSummary(
+        entradasCentavos: _intFrom(data['entradasCentavos']),
+        saidasCentavos: _intFrom(data['saidasCentavos']),
+      );
+    });
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFavoriteRecipients() {
     try {
       return _favoritesCollection
@@ -149,12 +169,12 @@ class PixRepository {
     if (favorite != null) return favorite;
 
     return PixRecipient(
-      name: 'Destinatário não verificado',
-      bank: 'Chave PIX informada pelo usuário',
+      name: 'Destinatário simulado',
+      bank: 'Banco simulado',
       key: normalizedKey,
       keyType: keyType,
-      document: 'Não verificado',
-      isVerified: false,
+      document: 'Simulação PIX',
+      isVerified: true,
       isFavorite: false,
     );
   }

@@ -302,6 +302,32 @@ class _PixTransferPageState extends State<PixTransferPage> {
     _mostrarMensagem('Contato frequente preenchido.');
   }
 
+  void _preencherSimulacao() {
+    const centavos = 12550;
+    final formatted = BrFormatters.currencyFromCentavos(centavos)
+        .replaceAll('R\$\u00a0', '')
+        .replaceAll('R\$ ', '')
+        .trim();
+
+    setState(() {
+      _tipoChave = 'E-mail';
+      _chaveController.text = 'maria.silva@pix.com';
+      _valorController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+      _recipient = const PixRecipient(
+        name: 'Maria Silva',
+        bank: 'Banco simulado',
+        key: 'maria.silva@pix.com',
+        keyType: 'E-mail',
+        document: 'Simulação PIX',
+        isFavorite: true,
+      );
+    });
+    _mostrarMensagem('Transferência simulada preenchida.');
+  }
+
   Future<void> _saveRecipientAsFavorite(PixRecipient recipient) async {
     final nameController = TextEditingController(
       text: recipient.isVerified ? recipient.name : '',
@@ -574,6 +600,12 @@ class _PixTransferPageState extends State<PixTransferPage> {
                 onPressed: _colarCodigoPix,
                 icon: const Icon(Icons.content_paste_rounded),
                 label: const Text('Colar código PIX'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _preencherSimulacao,
+                icon: const Icon(Icons.auto_fix_high_rounded),
+                label: const Text('Preencher simulação'),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(

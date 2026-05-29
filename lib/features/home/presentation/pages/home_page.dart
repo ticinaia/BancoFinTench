@@ -30,15 +30,15 @@ class _HomePageState extends State<HomePage> {
   bool _biometriaDisponivel = false;
   bool _saldoVisivel = false;
   Uint8List? _imagemPerfilBytes;
-  late Future<PixSummary> _monthlySummaryFuture;
   late final Stream<DocumentSnapshot<Map<String, dynamic>>> _accountStream;
+  late final Stream<PixSummary> _monthlySummaryStream;
 
   @override
   void initState() {
     super.initState();
     _accountStream = _pixRepository.watchAccount();
+    _monthlySummaryStream = _pixRepository.watchMonthlySummary();
     _verificarBiometria();
-    _monthlySummaryFuture = _pixRepository.getMonthlySummary();
   }
 
   Future<void> _verificarBiometria() async {
@@ -201,7 +201,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _copiarDadosConta() async {
     final user = _authRepository.currentUser;
     final text = '''
-BancoFinTech
+FinTech
 Titular: ${user?.displayName ?? user?.email ?? 'Cliente'}
 Agência: 0001
 Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
@@ -220,7 +220,7 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BancoFinTech'),
+        title: const Text('FinTech'),
         actions: [
           IconButton(
             onPressed: () => Navigator.pushNamed(context, AppRoutes.security),
@@ -324,8 +324,8 @@ Conta: ${user?.uid.substring(0, 8).toUpperCase() ?? '00000000'}
                   onToggleSaldo: _mostrarSaldoComBiometria,
                 ),
                 const SizedBox(height: 24),
-                FutureBuilder<PixSummary>(
-                  future: _monthlySummaryFuture,
+                StreamBuilder<PixSummary>(
+                  stream: _monthlySummaryStream,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return const HomeInfoPanel(

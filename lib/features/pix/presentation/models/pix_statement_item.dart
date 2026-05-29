@@ -44,10 +44,10 @@ class PixStatementItem {
   factory PixStatementItem.initialBalance() {
     return PixStatementItem(
       id: 'saldo-inicial',
-      key: 'Conta BancoFinTech',
+      key: 'Conta FinTech',
       keyType: 'Saldo',
       counterpartyName: 'Saldo inicial',
-      counterpartyBank: 'BancoFinTech',
+      counterpartyBank: 'FinTech',
       counterpartyDocument: '',
       amountCentavos: PixRepository.initialBalanceCentavos,
       direction: 'received',

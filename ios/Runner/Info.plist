@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Banco Fin Tech</string>
+	<string>FinTech</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -17,11 +17,11 @@
 	<key>CFBundleName</key>
 	<string>banco_fin_tech</string>
 	<key>NSCameraUsageDescription</key>
-	<string>O Banco Fin Tech usa a camera para ler codigos e selecionar imagens.</string>
+	<string>O FinTech usa a camera para ler codigos e selecionar imagens.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>O Banco Fin Tech usa Face ID para autenticar seu acesso com seguranca.</string>
+	<string>O FinTech usa Face ID para autenticar seu acesso com seguranca.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>O Banco Fin Tech usa sua galeria para selecionar imagens quando voce solicitar.</string>
+	<string>O FinTech usa sua galeria para selecionar imagens quando voce solicitar.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -33,7 +33,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Use a biometria para acessar o BancoFinTech.</string>
+	<string>Use a biometria para acessar o FinTech.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

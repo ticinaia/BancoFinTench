@@ -68,7 +68,7 @@ class _PixHistoryPageState extends State<PixHistoryPage> {
 
   void _compartilharComprovante(PixStatementItem item) {
     Share.share(
-      'Comprovante BancoFinTech\n\nValor: ${item.formattedAmount}\nTipo: ${item.typeLabel}\nPessoa: ${item.counterpartyName}\nBanco: ${item.counterpartyBank}\nChave: ${item.key}\nData: ${item.formattedDate}\nStatus: ${item.statusLabel}\nCódigo: ${item.id}',
+      'Comprovante FinTech\n\nValor: ${item.formattedAmount}\nTipo: ${item.typeLabel}\nPessoa: ${item.counterpartyName}\nBanco: ${item.counterpartyBank}\nChave: ${item.key}\nData: ${item.formattedDate}\nStatus: ${item.statusLabel}\nCódigo: ${item.id}',
     );
   }
 

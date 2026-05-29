@@ -106,6 +106,41 @@ class _CadastroPageState extends State<CadastroPage> {
     return BrAuthValidators.onlyDigits(value);
   }
 
+  String? _validarNome(String? valor) {
+    final text = valor?.trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
+    if (text.isEmpty) return 'Informe seu nome';
+    if (text.length < 5) return 'Informe seu nome completo';
+    final nomes = text.split(' ');
+    if (nomes.length < 2 || nomes.any((nome) => nome.length < 2)) {
+      return 'Informe nome e sobrenome';
+    }
+    if (!RegExp(r"^[A-Za-zÀ-ÖØ-öø-ÿ' ]+$").hasMatch(text)) {
+      return 'Use apenas letras no nome';
+    }
+    return null;
+  }
+
+  String? _validarSenha(String? valor) {
+    final senha = valor ?? '';
+    if (senha.isEmpty) return 'Informe sua senha';
+    if (senha.contains(RegExp(r'\s'))) {
+      return 'A senha não pode conter espaços';
+    }
+    if (senha.length < 8) {
+      return 'A senha deve ter pelo menos 8 caracteres';
+    }
+    if (!RegExp(r'[A-ZÀ-Ö]').hasMatch(senha)) {
+      return 'Use pelo menos uma letra maiúscula';
+    }
+    if (!RegExp(r'[a-zà-öø-ÿ]').hasMatch(senha)) {
+      return 'Use pelo menos uma letra minúscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(senha)) {
+      return 'Use pelo menos um número';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,7 +179,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Leva menos de um minuto para começar a usar o BancoFinTech.',
+              'Leva menos de um minuto para começar a usar o FinTech.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -152,6 +187,7 @@ class _CadastroPageState extends State<CadastroPage> {
             const SizedBox(height: 28),
             Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 children: [
                   TextFormField(
@@ -161,14 +197,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       labelText: 'Nome completo',
                       prefixIcon: Icon(Icons.badge_outlined),
                     ),
-                    validator: (valor) {
-                      final text = valor?.trim() ?? '';
-                      if (text.isEmpty) return 'Informe seu nome';
-                      if (text.split(' ').length < 2) {
-                        return 'Informe nome e sobrenome';
-                      }
-                      return null;
-                    },
+                    validator: _validarNome,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -182,7 +211,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       if (valor == null || valor.trim().isEmpty) {
                         return 'Informe seu e-mail';
                       }
-                      if (!BrAuthValidators.isValidEmail(valor)) {
+                      if (!BrAuthValidators.isValidEmail(valor.trim())) {
                         return 'Use um e-mail válido com @ e .com';
                       }
                       return null;
@@ -232,15 +261,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       labelText: 'Senha',
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
-                    validator: (valor) {
-                      if (valor == null || valor.trim().isEmpty) {
-                        return 'Informe sua senha';
-                      }
-                      if (valor.length < 6) {
-                        return 'A senha deve ter pelo menos 6 caracteres';
-                      }
-                      return null;
-                    },
+                    validator: _validarSenha,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -251,6 +272,9 @@ class _CadastroPageState extends State<CadastroPage> {
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
                     validator: (valor) {
+                      if (valor == null || valor.isEmpty) {
+                        return 'Confirme sua senha';
+                      }
                       if (valor != _senhaController.text) {
                         return 'As senhas não coincidem';
                       }
@@ -258,26 +282,43 @@ class _CadastroPageState extends State<CadastroPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  CheckboxListTile(
-                    value: _aceitouTermos,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text(
-                      'Li e aceito os termos de uso e a política de privacidade.',
-                    ),
-                    onChanged: (value) {
-                      setState(() => _aceitouTermos = value ?? false);
+                  FormField<bool>(
+                    initialValue: _aceitouTermos,
+                    validator: (_) {
+                      if (!_aceitouTermos) {
+                        return 'Você precisa aceitar os termos para criar a conta';
+                      }
+                      return null;
                     },
-                    subtitle: !_aceitouTermos
-                        ? const Text('Obrigatório para criar a conta')
-                        : null,
+                    builder: (field) {
+                      return CheckboxListTile(
+                        value: _aceitouTermos,
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: const Text(
+                          'Li e aceito os termos de uso e a política de privacidade.',
+                        ),
+                        onChanged: (value) {
+                          setState(() => _aceitouTermos = value ?? false);
+                          field.didChange(value ?? false);
+                        },
+                        subtitle: field.hasError
+                            ? Text(
+                                field.errorText!,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              )
+                            : null,
+                      );
+                    },
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _carregando || !_aceitouTermos ? null : _cadastrar,
+              onPressed: _carregando ? null : _cadastrar,
               icon: _carregando
                   ? const SizedBox(
                       width: 18,

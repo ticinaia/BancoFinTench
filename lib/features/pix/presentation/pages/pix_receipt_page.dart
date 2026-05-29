@@ -130,7 +130,7 @@ Código: ${receipt.id}
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Comprovante BancoFinTech',
+                    'Comprovante FinTech',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.72),
                         ),

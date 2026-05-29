@@ -185,7 +185,7 @@ class _SplashPageState extends State<SplashPage>
     return Column(
       children: [
         Text(
-          'BancoFinTech',
+          'FinTech',
           style: AppTextStyles.headlineLarge.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w800,

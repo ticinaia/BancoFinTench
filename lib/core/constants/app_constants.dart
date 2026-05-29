@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'BancoFinTech';
+  static const String appName = 'FinTech';
   static const String appVersion = '1.0.0';
 
   // Duração máxima usada apenas por testes legados e documentação.

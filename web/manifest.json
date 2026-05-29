@@ -1,11 +1,11 @@
 {
-    "name": "banco_fin_tech",
-    "short_name": "banco_fin_tech",
+    "name": "FinTech",
+    "short_name": "FinTech",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "FinTech - Aplicativo bancário moderno.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/widgets/app_bottom_navigation_bar.dart';
 import '../../../../core/services/app_repositories.dart';
 import '../../../../core/utils/br_formatters.dart';
+import '../widgets/pix_transfer_widgets.dart';
 
 class PixReceivePage extends StatefulWidget {
   const PixReceivePage({super.key});
@@ -64,6 +65,9 @@ class _PixReceivePageState extends State<PixReceivePage> {
   Future<void> _simularRecebimento() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final confirmado = await _confirmarRecebimento();
+    if (confirmado != true) return;
+
     setState(() => _simulando = true);
 
     try {
@@ -99,6 +103,75 @@ class _PixReceivePageState extends State<PixReceivePage> {
     );
   }
 
+  Future<bool?> _confirmarRecebimento() {
+    return showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Confirmar entrada PIX',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                PixResumoLinha(
+                  label: 'Valor',
+                  value: BrFormatters.currencyFromCentavos(_valorCentavos),
+                ),
+                const PixResumoLinha(
+                  label: 'Pagador',
+                  value: 'Cliente pagador simulado',
+                ),
+                const PixResumoLinha(
+                  label: 'Banco',
+                  value: 'Banco de origem simulado',
+                ),
+                PixResumoLinha(label: 'Chave', value: _pixKey),
+                PixResumoLinha(
+                  label: 'Data',
+                  value: BrFormatters.dateTime(DateTime.now()),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.check_circle_rounded),
+                  label: const Text('Confirmar recebimento'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _preencherSimulacao() {
+    const centavos = 8750;
+    final formatted = BrFormatters.currencyFromCentavos(centavos)
+        .replaceAll('R\$\u00a0', '')
+        .replaceAll('R\$ ', '')
+        .trim();
+
+    setState(() {
+      _valorController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    });
+    _showMessage('Recebimento simulado preenchido.');
+  }
+
   String _buildPixPayload({
     required String key,
     required String merchantName,
@@ -119,7 +192,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
       ..write(_tlv('58', 'BR'))
       ..write(_tlv('59', _normalizeMerchantName(merchantName)))
       ..write(_tlv('60', 'SAO PAULO'))
-      ..write(_tlv('62', _tlv('05', 'BancoFinTech')));
+      ..write(_tlv('62', _tlv('05', 'FinTech')));
 
     return '${payload}6304${_crc16('$payload' '6304')}';
   }
@@ -256,6 +329,12 @@ class _PixReceivePageState extends State<PixReceivePage> {
                 onPressed: _copyPayload,
                 icon: const Icon(Icons.copy_rounded),
                 label: const Text('Copiar código PIX'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _preencherSimulacao,
+                icon: const Icon(Icons.auto_fix_high_rounded),
+                label: const Text('Preencher simulação'),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
