@@ -274,12 +274,13 @@ class _PixTransferPageState extends State<PixTransferPage> {
 
   void _applyPixPayload(String payload) {
     final parsed = PixPayloadParser.parse(payload);
+    final parsedValue = parsed.valorCentavos;
     setState(() {
       _tipoChave = parsed.keyType;
       _chaveController.text = parsed.key;
-      if (parsed.valorCentavos != null && parsed.valorCentavos! > 0) {
-        final centavos = parsed.valorCentavos!;
-        final formatted = BrFormatters.currencyFromCentavos(centavos)
+      _recipient = null;
+      if (parsedValue != null && parsedValue > 0) {
+        final formatted = BrFormatters.currencyFromCentavos(parsedValue)
             .replaceAll('R\$ ', '')
             .replaceAll('R\$ ', '')
             .trim();
@@ -287,9 +288,14 @@ class _PixTransferPageState extends State<PixTransferPage> {
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
         );
+      } else {
+        _valorController.clear();
       }
     });
-    _mostrarMensagem('Dados PIX preenchidos.');
+    final valueMessage = parsedValue != null && parsedValue > 0
+        ? 'Valor: ${BrFormatters.currencyFromCentavos(parsedValue)}.'
+        : 'Este código não trouxe valor. Informe o valor para continuar.';
+    _mostrarMensagem('Código PIX lido. Chave: ${parsed.key}. $valueMessage');
   }
 
   void _applyFavoriteRecipient(PixFavoriteRecipient favorite) {

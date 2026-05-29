@@ -17,6 +17,8 @@ class PixReceivePage extends StatefulWidget {
 }
 
 class _PixReceivePageState extends State<PixReceivePage> {
+  static final RegExp _nonDigitsRegex = RegExp(r'[^\d]');
+
   final _formKey = GlobalKey<FormState>();
   final _valorController = TextEditingController();
   final _pixRepository = AppRepositories.pix;
@@ -38,7 +40,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
   }
 
   int get _valorCentavos {
-    return BrFormatters.parseCurrencyToCentavos(_valorController.text);
+    return int.tryParse(_onlyDigits(_valorController.text)) ?? 0;
   }
 
   String get _pixPayload {
@@ -65,6 +67,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
   Future<void> _simularRecebimento() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final valorCentavos = _valorCentavos;
     final confirmado = await _confirmarRecebimento();
     if (confirmado != true) return;
 
@@ -74,7 +77,7 @@ class _PixReceivePageState extends State<PixReceivePage> {
       final receipt = await _pixRepository.receberPix(
         chave: _pixKey,
         tipoChave: 'E-mail',
-        valorCentavos: _valorCentavos,
+        valorCentavos: valorCentavos,
         payerName: 'Cliente pagador',
         payerBank: 'Banco de origem',
       );
@@ -170,6 +173,30 @@ class _PixReceivePageState extends State<PixReceivePage> {
       );
     });
     _showMessage('Recebimento simulado preenchido.');
+  }
+
+  void _onValorChanged(String rawText) {
+    final digits = _onlyDigits(rawText);
+    if (digits.isEmpty) {
+      _valorController.value = const TextEditingValue(text: '');
+      setState(() {});
+      return;
+    }
+
+    final centavos = int.tryParse(digits) ?? 0;
+    final formatted = BrFormatters.currencyFromCentavos(centavos)
+        .replaceAll('R\$\u00a0', '')
+        .replaceAll('R\$ ', '')
+        .trim();
+    _valorController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+    setState(() {});
+  }
+
+  String _onlyDigits(String value) {
+    return value.replaceAll(_nonDigitsRegex, '');
   }
 
   String _buildPixPayload({
@@ -279,22 +306,20 @@ class _PixReceivePageState extends State<PixReceivePage> {
               const SizedBox(height: 24),
               TextFormField(
                 controller: _valorController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: TextInputType.number,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                  FilteringTextInputFormatter.digitsOnly,
                 ],
+                onChanged: _onValorChanged,
                 decoration: const InputDecoration(
                   labelText: 'Valor a receber',
                   prefixText: 'R\$ ',
                   prefixIcon: Icon(Icons.payments_rounded),
+                  hintText: '0,00',
+                  helperText: 'Digite apenas os números',
                 ),
-                onChanged: (_) => setState(() {}),
                 validator: (value) {
-                  final centavos = BrFormatters.parseCurrencyToCentavos(
-                    value ?? '',
-                  );
+                  final centavos = int.tryParse(_onlyDigits(value ?? '')) ?? 0;
                   if (centavos <= 0) return 'Informe um valor válido';
                   return null;
                 },

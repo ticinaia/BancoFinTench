@@ -33,9 +33,7 @@ class PixPayloadParser {
       return ParsedPixPayload(
         key: key,
         keyType: detectKeyType(key),
-        valorCentavos: amount == null
-            ? null
-            : BrFormatters.parseCurrencyToCentavos(amount),
+        valorCentavos: amount == null ? null : _parsePixAmount(amount),
       );
     }
 
@@ -68,9 +66,21 @@ class PixPayloadParser {
     return ParsedPixPayload(
       key: key,
       keyType: detectKeyType(key),
-      valorCentavos:
-          amount == null ? null : BrFormatters.parseCurrencyToCentavos(amount),
+      valorCentavos: amount == null ? null : _parsePixAmount(amount),
     );
+  }
+
+  static int _parsePixAmount(String amount) {
+    final text = amount.trim();
+    final normalized = text.replaceAll(RegExp(r'[^\d,.-]'), '');
+    final usesDecimalDot = RegExp(r'^\d+\.\d{1,2}$').hasMatch(normalized);
+
+    if (usesDecimalDot) {
+      final value = double.tryParse(normalized) ?? 0;
+      return (value * 100).round();
+    }
+
+    return BrFormatters.parseCurrencyToCentavos(text);
   }
 
   static Map<String, String> _parseTlv(String payload) {
