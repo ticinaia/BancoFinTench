@@ -229,7 +229,7 @@ No design, a IA ajudou a pensar em uma interface com aparência de banco digital
 
 Na manutenção, a IA foi usada para revisar textos, sugerir nomes mais claros, identificar repetições e apoiar pequenas otimizações sem alterar a lógica principal do app que foi feito pelos desenvolvedores. Um exemplo foi a criação de um helper para formatar valores monetários em campos de entrada, evitando repetição de código em telas de Pix.
 
-O uso da IA não substituiu a compreensão do projeto. Ela foi usada como ferramenta de apoio para organizar ideias, melhorar clareza e acelerar ajustes pontuais. Usamos de maneira consciente vsito que um dos requisitos foi justamente a proibiç~ao de uso massivo, o qual, essa equipe em especifico decidiu que passaria longe dos nossos principios e objetivos desde o inicio.
+O uso da IA não substituiu a compreensão do projeto. Ela foi usada como ferramenta de apoio para organizar ideias, melhorar clareza e acelerar ajustes pontuais. entao o uso foi pontual e consciente, respeitando o limite estabelecido pela atividade.
 
 ## 11. Como executar o projeto
 
